@@ -24,34 +24,37 @@ class CreateScriptTables extends Migration
         $output->writeln("Migration driver used: $driver");
 
         // Script Service Config
-        Schema::create(
-            'script_config',
-            function (Blueprint $t){
-                $t->integer('service_id')->unsigned()->primary();
-                $t->foreign('service_id')->references('id')->on('service')->onDelete('cascade');
-                $t->mediumText('content')->nullable();
-                $t->text('config')->nullable();
-            }
-        );
+        if (!Schema::hasTable('script_config')) {
+            Schema::create(
+                'script_config',
+                function (Blueprint $t) {
+                    $t->integer('service_id')->unsigned()->primary();
+                    $t->foreign('service_id')->references('id')->on('service')->onDelete('cascade');
+                    $t->mediumText('content')->nullable();
+                    $t->text('config')->nullable();
+                }
+            );
+        }
 
         // Event Scripts
-        Schema::create(
-            'event_script',
-            function (Blueprint $t) use ($userOnDelete){
-                $t->string('name', 80)->primary();
-                $t->string('type', 40);
-                $t->boolean('is_active')->default(0);
-                $t->mediumText('content')->nullable();
-                $t->text('config')->nullable();
-                $t->timestamp('created_date');
-                $t->timestamp('last_modified_date');
-                $t->integer('created_by_id')->unsigned()->nullable();
-                $t->foreign('created_by_id')->references('id')->on('user')->onDelete($userOnDelete);
-                $t->integer('last_modified_by_id')->unsigned()->nullable();
-                $t->foreign('last_modified_by_id')->references('id')->on('user')->onDelete($userOnDelete);
-            }
-        );
-
+        if (!Schema::hasTable('event_script')) {
+            Schema::create(
+                'event_script',
+                function (Blueprint $t) use ($userOnDelete) {
+                    $t->string('name', 80)->primary();
+                    $t->string('type', 40);
+                    $t->boolean('is_active')->default(0);
+                    $t->mediumText('content')->nullable();
+                    $t->text('config')->nullable();
+                    $t->timestamp('created_date');
+                    $t->timestamp('last_modified_date');
+                    $t->integer('created_by_id')->unsigned()->nullable();
+                    $t->foreign('created_by_id')->references('id')->on('user')->onDelete($userOnDelete);
+                    $t->integer('last_modified_by_id')->unsigned()->nullable();
+                    $t->foreign('last_modified_by_id')->references('id')->on('user')->onDelete($userOnDelete);
+                }
+            );
+        }
     }
 
     /**
