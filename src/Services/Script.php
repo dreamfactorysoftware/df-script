@@ -5,7 +5,7 @@ use DreamFactory\Core\Script\Components\ScriptHandler;
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
 use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Enums\ApiOptions;
-use DreamFactory\Core\Jobs\ScriptServiceJob;
+use DreamFactory\Core\Script\Jobs\ScriptServiceJob;
 use DreamFactory\Core\Services\BaseRestService;
 use DreamFactory\Core\Utility\ResourcesWrapper;
 use DreamFactory\Core\Utility\ResponseFactory;

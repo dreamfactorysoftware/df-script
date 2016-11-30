@@ -5,8 +5,8 @@ namespace DreamFactory\Core\Script\Facades;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @see DreamFactory\Core\Script\Components\ScriptEngineManager
- * @see DreamFactory\Core\Script\Contracts\ScriptEngineInterface
+ * @see \DreamFactory\Core\Script\Components\ScriptEngineManager
+ * @see \DreamFactory\Core\Script\Contracts\ScriptEngineInterface
  */
 class ScriptEngineManager extends Facade
 {
