@@ -136,6 +136,14 @@ _wrapperResult = (function() {
         console.log(JSON.stringify(_event));
     }
     
+    _event.setRequest = function(request){
+        if(request){
+            _event.request = request;
+        }
+        
+        console.log(JSON.stringify(_event));
+    };
+    
     _platform.api = {
         call: function (verb, path, payload, options, callback) {
             options = (options===null || options===undefined)? '' : options;
