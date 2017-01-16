@@ -1,10 +1,10 @@
 <?php
 namespace DreamFactory\Core\Script\Components;
 
-use DreamFactory\Core\Contracts\ScriptingEngineInterface;
+use DreamFactory\Core\Script\Contracts\ScriptingEngineInterface;
 use DreamFactory\Core\Enums\DataFormats;
 use DreamFactory\Core\Enums\ServiceRequestorTypes;
-use DreamFactory\Core\Events\Exceptions\ScriptException;
+use DreamFactory\Core\Script\Exceptions\ScriptException;
 use DreamFactory\Core\Exceptions\RestException;
 use DreamFactory\Core\Exceptions\ServiceUnavailableException;
 use DreamFactory\Core\Utility\ResponseFactory;

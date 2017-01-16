@@ -24,16 +24,16 @@ class NodeJs extends ExecutedEngine
      */
     public function __construct(array $settings = [])
     {
-        if (!isset($settings['command_name'])){
+        if (!isset($settings['command_name'])) {
             $settings['command_name'] = 'node';
         }
-        if (!isset($settings['command_path'])){
+        if (!isset($settings['command_path'])) {
             $settings['command_path'] = config('df.scripting.nodejs_path');
         }
-        if (!isset($settings['file_extension'])){
+        if (!isset($settings['file_extension'])) {
             $settings['file_extension'] = 'js';
         }
-        if (!isset($settings['supports_inline_execution'])){
+        if (!isset($settings['supports_inline_execution'])) {
             $settings['supports_inline_execution'] = true;
             $settings['inline_arguments'] = '-e';
         }
@@ -53,7 +53,7 @@ class NodeJs extends ExecutedEngine
     {
         $jsonEvent = json_encode($data, JSON_UNESCAPED_SLASHES);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
-        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443)? "'https'" : "'http'";
+        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443) ? "'https'" : "'http'";
 
         //  Load user libraries
         //$requiredLibraries = \Cache::get('scripting.libraries.nodejs.required', null);
@@ -135,6 +135,14 @@ _wrapperResult = (function() {
 
         console.log(JSON.stringify(_event));
     }
+    
+    _event.setRequest = function(request){
+        if(request){
+            _event.request = request;
+        }
+        
+        console.log(JSON.stringify(_event));
+    };
     
     _platform.api = {
         call: function (verb, path, payload, options, callback) {
@@ -219,7 +227,18 @@ _wrapperResult = (function() {
         }
     };
 
-	try	{
+   
+    process.on('uncaughtException', function(error){
+        var content = {
+            error : {
+                message : error.message,
+                code : 500
+            }
+        }
+        _event.setResponse(content, 500, 'application/json');
+    });
+ 
+    try	{
         //noinspection JSUnresolvedVariable
         _event.script_result = (function(event, platform) {
 
