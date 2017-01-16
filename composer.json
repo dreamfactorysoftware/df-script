@@ -6,9 +6,9 @@
     "dreamfactory",
     "rest",
     "api",
-    "mbaas",
-    "baas",
-    "paas"
+    "v8js",
+    "php",
+    "nodejs"
   ],
   "license":     [
     "Apache-2.0"
@@ -24,7 +24,7 @@
     }
   ],
   "require":     {
-    "dreamfactory/df-core": "~0.6.0"
+    "dreamfactory/df-core": "~0.7.0"
   },
   "autoload":    {
     "psr-4": {
