@@ -1,10 +1,5 @@
 ## DreamFactory Script v0.1
 
-[![Total Downloads](https://poser.pugx.org/dreamfactory/df-script/d/total.svg)](https://packagist.org/packages/dreamfactory/df-script)
-[![Latest Stable Version](https://poser.pugx.org/dreamfactory/df-script/v/stable.svg)](https://packagist.org/packages/dreamfactory/df-script)
-[![Latest Unstable Version](https://poser.pugx.org/dreamfactory/df-script/v/unstable.svg)](https://packagist.org/packages/dreamfactory/df-script)
-[![License](https://poser.pugx.org/dreamfactory/df-script/license.svg)](http://www.apache.org/licenses/LICENSE-2.0)
-
 > **Note:** This repository contains the scripting features of the DreamFactory platform. If you want the full DreamFactory platform, visit the main [DreamFactory repository](https://github.com/dreamfactorysoftware/dreamfactory).
 
 ## Overview
@@ -22,36 +17,6 @@ Edit your project’s composer.json to require the following package.
 	“require”:{
 		"dreamfactory/df-script": "~0.1.0"
 	}
-
-You may also need to add the following…
-
-	"minimum-stability": "dev",
-	"prefer-stable": true,
-
-
-Save your composer.json and do a "composer update" to install the package.
-Once the package is installed edit your config/app.php file to add the DfServiceProvider in the Providers array.
-
-	‘providers’ => [
-		….,
-		….,
-		'DreamFactory\Script\DfServiceProvider'
-	]
-
-Next run "php artisan vendor:publish" to publish the config file df.php to config/ directory and a helpful test_rest.html file to public/ directory.
-
-dreamfactory/df-script package also includes some helpful *-dist files inside the config directory. You can take a look at that and copy over what’s needed to the corresponding files of your app.
-If you have setup your database connection right in your .env file then run the following migration.
-	
-	php artisan migrate --path=vendor/dreamfactory/df-script/database/migrations/
-
-After the migration run the following seeder class.
-
-	php artisan db:seed --class=DreamFactory\\Script\\Database\\Seeds\\DatabaseSeeder
-
-Now if you have setup the phpunit config right in phpunit.xml (Use the supplied phpunit.xml-dist file in the package to use the right params) file then you should be able to run the unit tests.
-
-	phpunit vendor/dreamfactory/df-script/tests/
 
 ## Feedback and Contributions
 
