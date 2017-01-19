@@ -71,6 +71,8 @@ __headers = {
     'x-dreamfactory-api-key':_platform.session.api_key,
     'x-dreamfactory-session-token':_platform.session.session_token
     };
+if(hasattr(_event.request.headers, 'authorization')):
+    __headers['Authorization'] = _event.request.headers.authorization;
 
 class Api:
         def __init__(self, host, header, protocol):

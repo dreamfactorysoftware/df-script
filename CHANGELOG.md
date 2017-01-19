@@ -4,6 +4,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 ### Added
+- DF-957 Added basic auth support node and python internal api call
+
 ### Changed
 ### Fixed
 

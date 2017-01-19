@@ -26,7 +26,7 @@ class EventScript extends BaseSystemResource
     {
         if (!empty($this->resource)) {
             if (empty($record = $this->getPayloadData())) {
-                throw new BadRequestException('No record(s) detected in request.');
+                throw new BadRequestException('No record(s) detected in request.' . ResourcesWrapper::getWrapperMsg());
             }
 
             /** @var EventScriptModel $modelClass */
