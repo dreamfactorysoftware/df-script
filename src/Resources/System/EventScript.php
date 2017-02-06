@@ -5,6 +5,8 @@ namespace DreamFactory\Core\Script\Resources\System;
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
 use DreamFactory\Core\Enums\ApiOptions;
 use DreamFactory\Core\Exceptions\BadRequestException;
+use DreamFactory\Core\Exceptions\BatchException;
+use DreamFactory\Core\Exceptions\InternalServerErrorException;
 use DreamFactory\Core\Resources\System\BaseSystemResource;
 use DreamFactory\Core\Script\Models\EventScript as EventScriptModel;
 use DreamFactory\Core\Utility\ResourcesWrapper;
@@ -33,7 +35,18 @@ class EventScript extends BaseSystemResource
             $modelClass = static::$model;
             $params = $this->request->getParameters();
             if (empty($modelClass::find($this->resource))) {
-                $result = $modelClass::bulkCreate([$record], $params, true);
+                try {
+                    $result = $modelClass::bulkCreate([$record], $params);
+                    $result = current($result);
+                } catch (BatchException $ex) {
+                    $result = $ex->pickResponse(0);
+                    if ($result instanceof \Exception) {
+                        throw $result;
+                    }
+                } catch (\Exception $ex) {
+                    throw new InternalServerErrorException($ex->getMessage());
+                }
+
                 $result = ResourcesWrapper::cleanResources($result, false, static::getResourceIdentifier(), ApiOptions::FIELDS_ALL);
 
                 return ResponseFactory::create($result, null, HttpStatusCodeInterface::HTTP_CREATED);

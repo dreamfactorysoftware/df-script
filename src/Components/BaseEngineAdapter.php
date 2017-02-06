@@ -1,6 +1,7 @@
 <?php
 namespace DreamFactory\Core\Script\Components;
 
+use DreamFactory\Core\Components\ExceptionResponse;
 use DreamFactory\Core\Script\Contracts\ScriptingEngineInterface;
 use DreamFactory\Core\Enums\DataFormats;
 use DreamFactory\Core\Enums\ServiceRequestorTypes;
@@ -21,6 +22,8 @@ use ServiceManager;
  */
 abstract class BaseEngineAdapter implements ScriptingEngineInterface
 {
+    use ExceptionResponse;
+
     //*************************************************************************
     //	Constants
     //*************************************************************************
@@ -440,7 +443,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
                 $result = $service->handleRequest($request, $resource);
             }
         } catch (\Exception $ex) {
-            $result = ResponseFactory::createWithException($ex);
+            $result = static::exceptionToServiceResponse($ex);
 
             \Log::error('Exception: ' . $ex->getMessage(), ['response' => $result]);
         }
