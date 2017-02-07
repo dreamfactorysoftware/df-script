@@ -28,12 +28,8 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
     use ServiceDocBuilder;
 
-    public function boot()
+    public function register()
     {
-        $this->app->alias('df.script', ScriptEngineManager::class);
-        $loader = AliasLoader::getInstance();
-        $loader->alias('ScriptEngineManager', ScriptEngineManagerFacade::class);
-
         // Add our scripting service types.
         $this->app->resolving('df.service', function (ServiceManager $df) {
             $df->addType(
@@ -124,18 +120,22 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             $df->addMapping('event_script', EventScript::class);
         });
 
-        // add migrations
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
-        Event::subscribe(new ScriptableEventHandler());
-    }
-
-    public function register()
-    {
         // The script engine manager is used to resolve various script engines.
         // It also implements the resolver interface which may be used by other components adding script engines.
         $this->app->singleton('df.script', function ($app) {
             return new ScriptEngineManager($app);
         });
+    }
+
+    public function boot()
+    {
+        $this->app->alias('df.script', ScriptEngineManager::class);
+        $loader = AliasLoader::getInstance();
+        $loader->alias('ScriptEngineManager', ScriptEngineManagerFacade::class);
+
+        // add migrations
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        Event::subscribe(new ScriptableEventHandler());
     }
 }
