@@ -2,6 +2,8 @@
 
 namespace DreamFactory\Core\Script\Engines;
 
+use Cache;
+
 class Python extends ExecutedEngine
 {
     //*************************************************************************
@@ -48,6 +50,12 @@ class Python extends ExecutedEngine
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $jsonPlatform = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonPlatform);
         $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443)? "'https'" : "'http'";
+        $token = uniqid();
+        $tokenCache = [
+            'app_id'  => array_get($platform, 'session.app.id'),
+            'user_id' => array_get($platform, 'session.user.id')
+        ];
+        Cache::add('script-token:'.$token, $tokenCache, 5); // script should not take longer than 5 minutes to run
 
         if (empty($script)) {
             $script = 'pass;';
@@ -68,11 +76,8 @@ _platform = bunchify(platformJson);
 __protocol = $protocol;
 __host = _event.request.headers.host;
 __headers = {
-    'x-dreamfactory-api-key':_platform.session.api_key,
-    'x-dreamfactory-session-token':_platform.session.session_token
+    'x-dreamfactory-script-token':'$token'
     };
-if(hasattr(_event.request.headers, 'authorization')):
-    __headers['Authorization'] = _event.request.headers.authorization;
 
 class Api:
         def __init__(self, host, header, protocol):

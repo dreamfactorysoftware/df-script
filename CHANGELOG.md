@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 ### Fixed
 - Fixed migrations with timestamp fields due to Laravel issue #11518 with some MySQL versions
+- DF-915 Script tokening to authenticate internal script calls from node.js and python scripting
 
 ## [0.1.1] - 2017-01-16
 ### Changed
