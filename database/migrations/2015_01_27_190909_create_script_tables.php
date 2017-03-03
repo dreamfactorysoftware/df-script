@@ -45,7 +45,7 @@ class CreateScriptTables extends Migration
                     $t->boolean('is_active')->default(0);
                     $t->mediumText('content')->nullable();
                     $t->text('config')->nullable();
-                    $t->timestamp('created_date')->useCurrent();
+                    $t->timestamp('created_date')->nullable();
                     $t->timestamp('last_modified_date')->useCurrent();
                     $t->integer('created_by_id')->unsigned()->nullable();
                     $t->foreign('created_by_id')->references('id')->on('user')->onDelete($userOnDelete);
