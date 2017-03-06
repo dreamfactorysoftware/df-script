@@ -1,6 +1,8 @@
 <?php
 namespace DreamFactory\Core\Script\Engines;
 
+use Cache;
+
 /**
  * Plugin for the Node Javascript engine
  */
@@ -53,10 +55,17 @@ class NodeJs extends ExecutedEngine
     {
         $jsonEvent = json_encode($data, JSON_UNESCAPED_SLASHES);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
-        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443) ? "'https'" : "'http'";
+        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+            ($_SERVER['SERVER_PORT'] == 443)) ? "'https'" : "'http'";
+        $token = uniqid();
+        $tokenCache = [
+            'app_id'  => array_get($platform, 'session.app.id'),
+            'user_id' => array_get($platform, 'session.user.id')
+        ];
+        Cache::add('script-token:'.$token, $tokenCache, 5); // script should not take longer than 5 minutes to run
 
         //  Load user libraries
-        //$requiredLibraries = \Cache::get('scripting.libraries.nodejs.required', null);
+        //$requiredLibraries = Cache::get('scripting.libraries.nodejs.required', null);
 
         $enrobedScript = <<<JS
 
@@ -67,6 +76,8 @@ _wrapperResult = (function() {
     var _platform = {$jsonPlatform};
     //noinspection JSUnresolvedVariable
     var _protocol = {$protocol};
+    //noinspection JSUnresolvedVariable
+    var _token = '{$token}';
     //noinspection JSUnresolvedVariable
     var _host = _event.request.headers.host;
     //request options
@@ -146,8 +157,8 @@ _wrapperResult = (function() {
     
     _platform.api = {
         call: function (verb, path, payload, options, callback) {
-            options = (options===null || options===undefined)? '' : options;
-            var headers = (options.headers)? options.headers : (options.parameters)? '' : options;
+            options = (!options) ? {} : options;
+            var headers = (options.headers) ? options.headers : (options.parameters)? {} : options;
             
             var host = getHost(path);
             if(host.indexOf(':') !== -1){
@@ -171,20 +182,9 @@ _wrapperResult = (function() {
                 }
             }
             
-            if(!isInternalApi(path)){
-                _options.headers = headers;
-            } else {
-                _options.headers = {
-                    'x-dreamfactory-api-key': _platform.session.api_key,
-                    'x-dreamfactory-session-token': _platform.session.session_token 
-                }
-                if(headers){
-                    for(var header in headers){
-                        if(!_options.headers[header]){
-                            _options.headers[header] = headers[header];
-                        }
-                    }
-                }
+            _options.headers = headers;
+            if(isInternalApi(path)){
+                _options.headers['x-dreamfactory-script-token'] = _token;
             }
             
             if(typeof payload === 'object'){
@@ -223,6 +223,13 @@ _wrapperResult = (function() {
             return this.call('PATCH', path, payload, options, callback);
         },
         delete: function (path, payload, options, callback) {
+            if (payload) {
+                options = (!options) ? {} : options;
+                var headers = (options.headers) ? options.headers : (options.parameters) ? {} : options;
+                headers['x-http-method'] = 'DELETE';
+                options.headers = headers;
+                return this.call('POST', path, payload, options, callback);
+            }
             return this.call('DELETE', path, payload, options, callback);
         }
     };

@@ -6,6 +6,7 @@ use DreamFactory\Core\Enums\ServiceTypeGroups;
 use DreamFactory\Core\Models\SystemTableModelMapper;
 use DreamFactory\Core\Resources\System\SystemResourceManager;
 use DreamFactory\Core\Script\Components\ScriptEngineManager;
+use DreamFactory\Core\Script\Facades\ScriptEngineManager as ScriptEngineManagerFacade;
 use DreamFactory\Core\Script\Handlers\Events\ScriptableEventHandler;
 use DreamFactory\Core\Script\Resources\System\EventScript;
 use DreamFactory\Core\Script\Resources\System\ScriptType;
@@ -20,6 +21,8 @@ use DreamFactory\Core\Script\Services\Python;
 use DreamFactory\Core\Script\Services\V8js;
 use DreamFactory\Core\Services\ServiceManager;
 use DreamFactory\Core\Services\ServiceType;
+use Event;
+use Illuminate\Foundation\AliasLoader;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
@@ -27,12 +30,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
 
     public function register()
     {
-        // The script engine manager is used to resolve various script engines.
-        // It also implements the resolver interface which may be used by other components adding script engines.
-        $this->app->singleton('df.script', function ($app) {
-            return new ScriptEngineManager($app);
-        });
-
         // Add our scripting service types.
         $this->app->resolving('df.service', function (ServiceManager $df) {
             $df->addType(
@@ -101,19 +98,19 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->app->resolving('df.system.resource', function (SystemResourceManager $df) {
             $df->addType(
                 new SystemResourceType([
-                        'name'        => 'script_type',
-                        'label'       => 'Script Types',
-                        'description' => 'Read-only system scripting types.',
-                        'class_name'  => ScriptType::class,
-                        'read_only'   => true,
+                    'name'        => 'script_type',
+                    'label'       => 'Script Types',
+                    'description' => 'Read-only system scripting types.',
+                    'class_name'  => ScriptType::class,
+                    'read_only'   => true,
                 ])
             );
             $df->addType(
                 new SystemResourceType([
-                        'name'        => 'event_script',
-                        'label'       => 'Event Scripts',
-                        'description' => 'Allows registering server-side scripts to system generated events.',
-                        'class_name'  => EventScript::class,
+                    'name'        => 'event_script',
+                    'label'       => 'Event Scripts',
+                    'description' => 'Allows registering server-side scripts to system generated events.',
+                    'class_name'  => EventScript::class,
                 ])
             );
         });
@@ -123,6 +120,22 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
             $df->addMapping('event_script', EventScript::class);
         });
 
-        \Event::subscribe(new ScriptableEventHandler());
+        // The script engine manager is used to resolve various script engines.
+        // It also implements the resolver interface which may be used by other components adding script engines.
+        $this->app->singleton('df.script', function ($app) {
+            return new ScriptEngineManager($app);
+        });
+    }
+
+    public function boot()
+    {
+        $this->app->alias('df.script', ScriptEngineManager::class);
+        $loader = AliasLoader::getInstance();
+        $loader->alias('ScriptEngineManager', ScriptEngineManagerFacade::class);
+
+        // add migrations
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+
+        Event::subscribe(new ScriptableEventHandler());
     }
 }
