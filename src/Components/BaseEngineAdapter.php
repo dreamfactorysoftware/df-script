@@ -123,7 +123,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
         array $config = [],
         array &$data = [],
         &$output = null
-    ) {
+    ){
         $result = $message = false;
 
         try {
@@ -471,27 +471,27 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
 
         $api = new \stdClass();
 
-        $api->call = function ($method, $path, $payload = null, $curlOptions = []) {
+        $api->call = function ($method, $path, $payload = null, $curlOptions = []){
             return static::inlineRequest($method, $path, $payload, $curlOptions);
         };
 
-        $api->get = function ($path, $payload = null, $curlOptions = []) {
+        $api->get = function ($path, $payload = null, $curlOptions = []){
             return static::inlineRequest(Verbs::GET, $path, $payload, $curlOptions);
         };
 
-        $api->post = function ($path, $payload = null, $curlOptions = []) {
+        $api->post = function ($path, $payload = null, $curlOptions = []){
             return static::inlineRequest(Verbs::POST, $path, $payload, $curlOptions);
         };
 
-        $api->put = function ($path, $payload = null, $curlOptions = []) {
+        $api->put = function ($path, $payload = null, $curlOptions = []){
             return static::inlineRequest(Verbs::PUT, $path, $payload, $curlOptions);
         };
 
-        $api->patch = function ($path, $payload = null, $curlOptions = []) {
+        $api->patch = function ($path, $payload = null, $curlOptions = []){
             return static::inlineRequest(Verbs::PATCH, $path, $payload, $curlOptions);
         };
 
-        $api->delete = function ($path, $payload = null, $curlOptions = []) {
+        $api->delete = function ($path, $payload = null, $curlOptions = []){
             return static::inlineRequest(Verbs::DELETE, $path, $payload, $curlOptions);
         };
 
@@ -523,5 +523,71 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
         /** @noinspection PhpIllegalArrayKeyTypeInspection */
 
         return @round($bytes / pow(1024, ($i = floor(log($bytes, 1024)))), 2) . $units[$i];
+    }
+
+    /**
+     * Json Encodes an array safely by base64 encoding
+     * strings (binary) that cannot be json encoded.
+     *
+     * @param array $data
+     * @param bool  $base64
+     *
+     * @return string
+     */
+    protected function safeJsonEncode(array $data, $base64 = true)
+    {
+        foreach ($data as $key => $value) {
+            $data[$key] = $this->makeJsonSafe($value, $base64);
+        }
+
+        return json_encode($data, JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * Base64 encodes any string or array of strings that
+     * cannot be JSON encoded.
+     *
+     * @param string|array $data
+     * @param bool         $base64
+     *
+     * @return array|string
+     */
+    protected function makeJsonSafe($data, $base64 = true)
+    {
+        if (is_array($data)) {
+            foreach ($data as $key => $value) {
+                $data[$key] = $this->makeJsonSafe($value, $base64);
+            }
+        }
+        if (!$this->isJsonEncodable($data)) {
+            if (true === $base64) {
+                return 'base64:' . base64_encode($data);
+            } else {
+                return '--non-parsable-data--';
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * Checks to see if a string can be json encoded.
+     *
+     * @param string $data
+     *
+     * @return bool
+     */
+    protected function isJsonEncodable($data)
+    {
+        if (!is_array($data)) {
+            $data = [$data];
+        }
+        $json = json_encode($data, JSON_UNESCAPED_SLASHES);
+
+        if ($json === false) {
+            return false;
+        }
+
+        return true;
     }
 }

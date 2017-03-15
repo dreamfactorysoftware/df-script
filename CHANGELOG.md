@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Fixed
+- DF-1054 Fixed event script execution as part of file upload
 
 ## [0.8.0] - 2017-03-03
 - Major restructuring to upgrade to Laravel 5.4 and be more dynamically available

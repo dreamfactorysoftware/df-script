@@ -45,7 +45,7 @@ class Python extends ExecutedEngine
 
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
-        $jsonEvent = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $jsonEvent = $this->safeJsonEncode($data, false);
         $jsonEvent = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonEvent);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $jsonPlatform = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonPlatform);

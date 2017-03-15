@@ -53,7 +53,7 @@ class NodeJs extends ExecutedEngine
      */
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
-        $jsonEvent = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $jsonEvent = $this->safeJsonEncode($data, false);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
             ($_SERVER['SERVER_PORT'] == 443)) ? "'https'" : "'http'";
