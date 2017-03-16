@@ -55,14 +55,17 @@ class NodeJs extends ExecutedEngine
     {
         $jsonEvent = $this->safeJsonEncode($data, false);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
-        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
-            ($_SERVER['SERVER_PORT'] == 443)) ? "'https'" : "'http'";
+        $protocol = "'http'";
+        $https = array_get($_SERVER, 'HTTPS');
+        if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
+            $protocol = "'https'";
+        }
         $token = uniqid();
         $tokenCache = [
             'app_id'  => array_get($platform, 'session.app.id'),
             'user_id' => array_get($platform, 'session.user.id')
         ];
-        Cache::add('script-token:'.$token, $tokenCache, 5); // script should not take longer than 5 minutes to run
+        Cache::add('script-token:' . $token, $tokenCache, 5); // script should not take longer than 5 minutes to run
 
         //  Load user libraries
         //$requiredLibraries = Cache::get('scripting.libraries.nodejs.required', null);

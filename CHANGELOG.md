@@ -6,7 +6,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Fixed
 - DF-1054 Fixed event script execution as part of file upload
 
-## [0.8.0] - 2017-03-03
+## [0.2.1] - 2017-03-16
+### Fixed
+- Remove the $_SERVER dependency in Node and Python scripting so it can run queued
+
+## [0.2.0] - 2017-03-03
 - Major restructuring to upgrade to Laravel 5.4 and be more dynamically available
 
 ### Added
@@ -24,6 +28,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## 0.1.0 - 2016-11-30
 First official release working with the new [dreamfactory](https://github.com/dreamfactorysoftware/dreamfactory) project.
 
-[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.2.0...HEAD
+[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.2.1...HEAD
+[0.2.1]: https://github.com/dreamfactorysoftware/df-script/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.1.1...0.2.0
 [0.1.1]: https://github.com/dreamfactorysoftware/df-script/compare/0.1.0...0.1.1

@@ -49,7 +49,11 @@ class Python extends ExecutedEngine
         $jsonEvent = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonEvent);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $jsonPlatform = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonPlatform);
-        $protocol = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443)? "'https'" : "'http'";
+        $protocol = "'http'";
+        $https = array_get($_SERVER, 'HTTPS');
+        if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
+            $protocol = "'https'";
+        }
         $token = uniqid();
         $tokenCache = [
             'app_id'  => array_get($platform, 'session.app.id'),
