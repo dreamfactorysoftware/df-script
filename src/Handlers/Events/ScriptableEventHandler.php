@@ -100,7 +100,7 @@ class ScriptableEventHandler
                     return $this->handleEventScriptResult($script, $result);
                 }
             } elseif ($event instanceof QueuedApiEvent) {
-                $result = $event->dispatch(new ApiEventScriptJob($event->name, $event, $script->config));
+                $result = $event->dispatchNow(new ApiEventScriptJob($event->name, $event, $script->config));
                 Log::debug('API event queued: ' . $event->name . PHP_EOL . $result);
             }
         }
@@ -115,6 +115,7 @@ class ScriptableEventHandler
      */
     public function getEventScript($name)
     {
+        /** @var EventScript $model */
         if (empty($model = EventScript::whereName($name)->whereIsActive(true)->first())) {
             return null;
         }
