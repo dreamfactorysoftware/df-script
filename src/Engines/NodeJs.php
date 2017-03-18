@@ -48,6 +48,12 @@ class NodeJs extends ExecutedEngine
             (is_string($extensions)) ? array_map('trim', explode(',', trim($extensions, ','))) : $extensions;
     }
 
+    /** {@inheritdoc} */
+    protected function checkOutputStringForData($output)
+    {
+        return ((strlen($output) > 10) && (false !== strpos($output, '"request":')));
+    }
+
     /**
      * {@inheritdoc}
      */

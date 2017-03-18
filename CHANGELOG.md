@@ -5,6 +5,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [Unreleased]
 ### Fixed
 - DF-1054 Fixed event script execution as part of file upload
+- DF-1046 Stopped NodeJS queued script execution when throwing exception
 
 ## [0.2.1] - 2017-03-16
 ### Fixed
