@@ -64,7 +64,7 @@ class EventScript extends BaseSystemModel
 
     public $incrementing = false;
 
-    public function validate(array $data, $throwException = true)
+    public function validate($data, $throwException = true)
     {
         if (!empty($disable = config('df.scripting.disable'))) {
             switch (strtolower($disable)) {

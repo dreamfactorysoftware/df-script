@@ -39,7 +39,7 @@ class ScriptConfig extends BaseServiceConfigModel
     /**
      * {@inheritdoc}
      */
-    public static function validateConfig($config, $create = true)
+    public static function setConfig($id, $config, $local_config = null)
     {
         if (!empty($disable = config('df.scripting.disable'))) {
             switch (strtolower($disable)) {
@@ -55,7 +55,7 @@ class ScriptConfig extends BaseServiceConfigModel
             }
         }
 
-        return true;
+        return parent::setConfig($id, $config, $local_config);
     }
 
     /**
