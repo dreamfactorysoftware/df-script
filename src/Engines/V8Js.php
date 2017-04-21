@@ -351,7 +351,7 @@ class V8Js extends BaseEngineAdapter
         }
         $this->engine->platform = $platform;
 
-        $jsonEvent = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $jsonEvent = $this->safeJsonEncode($data, false);
 
         //  Load user libraries
         $requiredLibraries = \Cache::get('scripting.libraries.v8js.required', null);

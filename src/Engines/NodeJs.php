@@ -48,12 +48,18 @@ class NodeJs extends ExecutedEngine
             (is_string($extensions)) ? array_map('trim', explode(',', trim($extensions, ','))) : $extensions;
     }
 
+    /** {@inheritdoc} */
+    protected function checkOutputStringForData($output)
+    {
+        return ((strlen($output) > 10) && (false !== strpos($output, '"request":')));
+    }
+
     /**
      * {@inheritdoc}
      */
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
-        $jsonEvent = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $jsonEvent = $this->safeJsonEncode($data, false);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $protocol = "'http'";
         $https = array_get($_SERVER, 'HTTPS');

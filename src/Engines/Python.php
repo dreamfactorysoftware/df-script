@@ -32,20 +32,9 @@ class Python extends ExecutedEngine
         parent::__construct($settings);
     }
 
-    protected function transformOutputStringToData($output)
-    {
-        $output = str_replace(
-            ["'{", "}',", "'", "True", "False", "None", '\n'],
-            ["{", "},", "\"", "true", "false", "null", ''],
-            $output
-        );
-
-        return parent::transformOutputStringToData($output);
-    }
-
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
-        $jsonEvent = json_encode($data, JSON_UNESCAPED_SLASHES);
+        $jsonEvent = $this->safeJsonEncode($data, false);
         $jsonEvent = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonEvent);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $jsonPlatform = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonPlatform);
@@ -189,7 +178,7 @@ except Exception as e:
     _event.script_result = {'error':str(e)};
     _event.exception = str(e)
 
-print unbunchify(_event);
+print json.dumps(_event);
 python;
         $enrobedScript = trim($enrobedScript);
 
