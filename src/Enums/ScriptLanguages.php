@@ -1,7 +1,7 @@
 <?php
 namespace DreamFactory\Core\Script\Enums;
 
-use DreamFactory\Library\Utility\Enums\FactoryEnum;
+use DreamFactory\Core\Enums\FactoryEnum;
 
 /**
  * ScriptLanguages
