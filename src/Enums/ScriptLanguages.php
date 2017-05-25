@@ -5,7 +5,7 @@ use DreamFactory\Core\Enums\FactoryEnum;
 
 /**
  * ScriptLanguages
- * Supported and future DSP scripting languages
+ * Supported and future DreamFactory scripting languages
  */
 class ScriptLanguages extends FactoryEnum
 {
