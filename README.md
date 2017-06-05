@@ -1,4 +1,4 @@
-## DreamFactory Script v0.1
+## DreamFactory Script v0.4
 
 > **Note:** This repository contains the scripting features of the DreamFactory platform. If you want the full DreamFactory platform, visit the main [DreamFactory repository](https://github.com/dreamfactorysoftware/dreamfactory).
 
@@ -15,7 +15,7 @@ Documentation for the scripting features can be found on the [DreamFactory wiki]
 Edit your project’s composer.json to require the following package.
 
 	“require”:{
-		"dreamfactory/df-script": "~0.1.0"
+		"dreamfactory/df-script": "~0.4.0"
 	}
 
 ## Feedback and Contributions
