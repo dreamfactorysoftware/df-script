@@ -1,11 +1,11 @@
 <?php
 namespace DreamFactory\Core\Script\Enums;
 
-use DreamFactory\Library\Utility\Enums\FactoryEnum;
+use DreamFactory\Core\Enums\FactoryEnum;
 
 /**
  * ScriptLanguages
- * Supported and future DSP scripting languages
+ * Supported and future DreamFactory scripting languages
  */
 class ScriptLanguages extends FactoryEnum
 {

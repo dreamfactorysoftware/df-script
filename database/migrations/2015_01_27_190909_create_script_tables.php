@@ -17,7 +17,7 @@ class CreateScriptTables extends Migration
         // Even though we take care of this scenario in the code,
         // SQL Server does not allow potential cascading loops,
         // so set the default no action and clear out created/modified by another user when deleting a user.
-        $userOnDelete = (('sqlsrv' === $driver) ? 'no action' : 'set null');
+        $onDelete = (('sqlsrv' === $driver) ? 'no action' : 'set null');
 
         $output = new ConsoleOutput();
         $output->writeln("Migration driver used: $driver");
@@ -39,7 +39,7 @@ class CreateScriptTables extends Migration
         if (!Schema::hasTable('event_script')) {
             Schema::create(
                 'event_script',
-                function (Blueprint $t) use ($userOnDelete) {
+                function (Blueprint $t) use ($onDelete) {
                     $t->string('name', 80)->primary();
                     $t->string('type', 40);
                     $t->boolean('is_active')->default(0);
@@ -48,9 +48,9 @@ class CreateScriptTables extends Migration
                     $t->timestamp('created_date')->nullable();
                     $t->timestamp('last_modified_date')->useCurrent();
                     $t->integer('created_by_id')->unsigned()->nullable();
-                    $t->foreign('created_by_id')->references('id')->on('user')->onDelete($userOnDelete);
+                    $t->foreign('created_by_id')->references('id')->on('user')->onDelete($onDelete);
                     $t->integer('last_modified_by_id')->unsigned()->nullable();
-                    $t->foreign('last_modified_by_id')->references('id')->on('user')->onDelete($userOnDelete);
+                    $t->foreign('last_modified_by_id')->references('id')->on('user')->onDelete($onDelete);
                 }
             );
         }

@@ -5,7 +5,6 @@ use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Exceptions\InternalServerErrorException;
 use DreamFactory\Core\Exceptions\ServiceUnavailableException;
 use DreamFactory\Core\Script\Components\BaseEngineAdapter;
-use DreamFactory\Library\Utility\Scalar;
 use DreamFactory\Core\Script\Components\ScriptSession;
 use DreamFactory\Core\Utility\Session;
 use Log;
@@ -68,8 +67,8 @@ class V8Js extends BaseEngineAdapter
         $extensions = array_get($settings, 'extensions', []);
         // accept comma-delimited string
         $extensions = (is_string($extensions)) ? array_map('trim', explode(',', trim($extensions, ','))) : $extensions;
-        $reportUncaughtExceptions = Scalar::boolval(array_get($settings, 'report_uncaught_exceptions', false));
-        $logMemoryUsage = Scalar::boolval(array_get($settings, 'log_memory_usage', false));
+        $reportUncaughtExceptions = array_get_bool($settings, 'report_uncaught_exceptions');
+        $logMemoryUsage = array_get_bool($settings, 'log_memory_usage');
 
         static::startup($settings);
 

@@ -10,11 +10,11 @@ use DreamFactory\Core\Exceptions\RestException;
 use DreamFactory\Core\Exceptions\ServiceUnavailableException;
 use DreamFactory\Core\Utility\ResponseFactory;
 use DreamFactory\Core\Utility\Session;
-use DreamFactory\Library\Utility\ArrayUtils;
-use DreamFactory\Library\Utility\Curl;
-use DreamFactory\Library\Utility\Enums\Verbs;
+use DreamFactory\Core\Utility\Curl;
+use DreamFactory\Core\Enums\Verbs;
 use Cache;
 use Config;
+use Illuminate\Support\Arr;
 use ServiceManager;
 
 /**
@@ -326,7 +326,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
         if (!empty($headers = (array)array_get($curlOptions, 'headers'))) {
             unset($curlOptions['headers']);
             $curlHeaders = [];
-            if (ArrayUtils::isArrayNumeric($headers)) {
+            if (!Arr::isAssoc($headers)) {
                 $curlHeaders = $headers;
             } else {
                 foreach ($headers as $key => $value) {
