@@ -43,7 +43,7 @@ class ServiceEventScriptJob extends ScriptJob
             $session = json_decode(Crypt::decrypt($this->session), true);
             Session::replace($session);
 
-            $data = json_decode(Crypt::decrypt($this->event));
+            $data = json_decode(Crypt::decrypt($this->event), true);
             if (null !== $this->handleScript($script->name, $script->content, $script->type, $script->config, $data)) {
                 Log::notice('Queued Script success for ' . $this->script_id);
             }
