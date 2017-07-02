@@ -12,7 +12,7 @@ use Illuminate\Database\Query\Builder;
  * @property string  $name
  * @property string  $type
  * @property string  $content
- * @property string  $config
+ * @property array   $config
  * @property boolean $is_active
  * @property boolean $allow_event_modification
  * @method static Builder|EventScript whereIsActive($value)

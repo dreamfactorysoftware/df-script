@@ -1,4 +1,5 @@
 <?php
+
 namespace DreamFactory\Core\Script\Handlers\Events;
 
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
@@ -6,18 +7,20 @@ use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Events\ApiEvent;
 use DreamFactory\Core\Events\PostProcessApiEvent;
 use DreamFactory\Core\Events\PreProcessApiEvent;
-use DreamFactory\Core\Events\QueuedApiEvent;
+use DreamFactory\Core\Events\ServiceEvent;
 use DreamFactory\Core\Script\Components\ScriptHandler;
-use DreamFactory\Core\Script\Jobs\ApiEventScriptJob;
+use DreamFactory\Core\Script\Jobs\ServiceEventScriptJob;
 use DreamFactory\Core\Script\Models\EventScript;
 use DreamFactory\Core\Utility\ResponseFactory;
 use DreamFactory\Core\Utility\Session;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Foundation\Bus\DispatchesJobs;
 use Log;
 
 class ScriptableEventHandler
 {
     use ScriptHandler;
+    use DispatchesJobs;
 
     /**
      * Register the listeners for the subscriber.
@@ -30,9 +33,15 @@ class ScriptableEventHandler
             [
                 PreProcessApiEvent::class,
                 PostProcessApiEvent::class,
-                QueuedApiEvent::class,
             ],
             static::class . '@handleApiEvent'
+        );
+        $events->listen(
+            [
+                ApiEvent::class,
+                ServiceEvent::class,
+            ],
+            static::class . '@handleServiceEvent'
         );
     }
 
@@ -48,11 +57,12 @@ class ScriptableEventHandler
         Log::debug('API event handled: ' . $event->name);
 
         if ($script = $this->getEventScript($event->name)) {
-            if ($event instanceof PreProcessApiEvent) {
-                $data = $event->makeData();
+            Log::debug('API event script found: ' . $event->name);
+            $data = $event->makeData();
 
-                if (null !== $result = $this->handleEventScript($script, $data)) {
-                    if ($script->allow_event_modification) {
+            if (null !== $result = $this->handleEventScript($script, $data)) {
+                if ($script->allow_event_modification) {
+                    if ($event instanceof PreProcessApiEvent) {
                         // request only
                         $event->request->mergeFromArray((array)array_get($result, 'request'));
 
@@ -69,15 +79,7 @@ class ScriptableEventHandler
                                 $event->response = ResponseFactory::create($response);
                             }
                         }
-                    }
-
-                    return $this->handleEventScriptResult($script, $result);
-                }
-            } elseif ($event instanceof PostProcessApiEvent) {
-                $data = $event->makeData();
-
-                if (null !== $result = $this->handleEventScript($script, $data)) {
-                    if ($script->allow_event_modification) {
+                    } elseif ($event instanceof PostProcessApiEvent) {
                         if (empty($response = array_get($result, 'response', []))) {
                             // check for "return" results
                             // could be formatted array or raw content
@@ -85,7 +87,10 @@ class ScriptableEventHandler
                                 $response = $result;
                             } else {
                                 // otherwise must be raw content, assumes 200
-                                $response = ['content' => $result, 'status_code' => HttpStatusCodeInterface::HTTP_OK];
+                                $response = [
+                                    'content'     => $result,
+                                    'status_code' => HttpStatusCodeInterface::HTTP_OK
+                                ];
                             }
                         }
 
@@ -96,13 +101,37 @@ class ScriptableEventHandler
                             $event->response = $response;
                         }
                     }
-
-                    return $this->handleEventScriptResult($script, $result);
                 }
-            } elseif ($event instanceof QueuedApiEvent) {
-                $result = $event->dispatchNow(new ApiEventScriptJob($event->name, $event, $script->config));
-                Log::debug('API event queued: ' . $event->name . PHP_EOL . $result);
+
+                return $this->handleEventScriptResult($script, $result);
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * Handle queueable service events.
+     *
+     * @param ServiceEvent $event
+     *
+     * @return boolean
+     */
+    public function handleServiceEvent($event)
+    {
+        Log::debug('Service event handled: ' . $event->name);
+
+        if ($script = $this->getEventScript($event->name)) {
+            Log::debug('Service event script found: ' . $event->name);
+            $data = $event->makeData();
+
+            if (null !== $result = $this->handleEventScript($script, $data)) {
+                return $this->handleEventScriptResult($script, $result);
+            }
+        } elseif ($script = $this->getEventScript($event->name . '.queued')) {
+            Log::debug('Queued service event script found: ' . $event->name);
+            $result = $this->dispatchNow(new ServiceEventScriptJob($event->name, $event, $script->config));
+            Log::debug('Service event queued: ' . $event->name . PHP_EOL . $result);
         }
 
         return true;
@@ -127,7 +156,7 @@ class ScriptableEventHandler
 
         return $model;
     }
-    
+
     /**
      * @param EventScript $script
      * @param array       $event
