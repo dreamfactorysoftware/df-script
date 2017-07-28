@@ -170,20 +170,20 @@ _wrapperResult = (function() {
             var headers = (options.headers) ? options.headers : (options.parameters)? {} : options;
             
             var host = getHost(path);
-            if(host.indexOf(':') !== -1){
+            if (host.indexOf(':') !== -1){
                 host = host.split(':');    
                 _options.host = host[0];
                 _options.port = host[1];
             } else {
                 _options.host = host;
-                if(_options.port) delete _options.port;
+                if (_options.port) delete _options.port;
             }
             _options.method = verb;
             _options.path = cleanPath(path);
             
-            if(options.parameters){
-                for(var param in options.parameters){
-                    if(_options.path.indexOf('?') === -1){
+            if (options.parameters){
+                for (var param in options.parameters){
+                    if (_options.path.indexOf('?') === -1){
                         _options.path = _options.path + '?' + param + '=' + options.parameters[param];
                     } else {
                         _options.path = _options.path + '&' + param + '=' + options.parameters[param];
@@ -192,11 +192,11 @@ _wrapperResult = (function() {
             }
             
             _options.headers = headers;
-            if(isInternalApi(path)){
+            if (isInternalApi(path)){
                 _options.headers['x-dreamfactory-script-token'] = _token;
             }
             
-            if(typeof payload === 'object'){
+            if (typeof payload === 'object'){
                 payload = JSON.stringify(payload);
             }
 

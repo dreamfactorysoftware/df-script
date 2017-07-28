@@ -3,12 +3,12 @@
 namespace DreamFactory\Core\Script\Jobs;
 
 use Crypt;
-use DreamFactory\Core\Events\QueuedApiEvent;
+use DreamFactory\Core\Events\ServiceEvent;
 use DreamFactory\Core\Script\Models\EventScript;
 use Log;
 use Session;
 
-class ApiEventScriptJob extends ScriptJob
+class ServiceEventScriptJob extends ScriptJob
 {
     public $script_id;
 
@@ -18,14 +18,14 @@ class ApiEventScriptJob extends ScriptJob
 
     /**
      * Create a new job instance.
-     * @param integer        $id
-     * @param QueuedApiEvent $event
-     * @param array          $config
+     * @param integer      $id
+     * @param ServiceEvent $event
+     * @param array        $config
      */
-    public function __construct($id, QueuedApiEvent $event, $config = [])
+    public function __construct($id, ServiceEvent $event, $config = [])
     {
         $this->script_id = $id;
-        $this->event = $event;
+        $this->event = Crypt::encrypt(json_encode($event->makeData()));
         $this->session = Crypt::encrypt(json_encode(Session::all()));
 
         parent::__construct($config);
@@ -43,7 +43,7 @@ class ApiEventScriptJob extends ScriptJob
             $session = json_decode(Crypt::decrypt($this->session), true);
             Session::replace($session);
 
-            $data = $this->event->makeData();
+            $data = json_decode(Crypt::decrypt($this->event), true);
             if (null !== $this->handleScript($script->name, $script->content, $script->type, $script->config, $data)) {
                 Log::notice('Queued Script success for ' . $this->script_id);
             }

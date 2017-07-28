@@ -4,6 +4,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2017-07-27
+- Rework Event structure to allow for non-API driven service events
+- Bug fix for script handling issues
+
 ## [0.4.0] - 2017-06-05
 ### Changed
 - Cleanup - removal of php-utils dependency
@@ -39,7 +43,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## 0.1.0 - 2016-11-30
 First official release working with the new [dreamfactory](https://github.com/dreamfactorysoftware/dreamfactory) project.
 
-[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.4.0...HEAD
+[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.5.0...HEAD
+[0.5.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/dreamfactorysoftware/df-script/compare/0.2.0...0.2.1
