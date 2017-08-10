@@ -1,7 +1,6 @@
 <?php
 namespace DreamFactory\Core\Script;
 
-use DreamFactory\Core\Components\ServiceDocBuilder;
 use DreamFactory\Core\Enums\ServiceTypeGroups;
 use DreamFactory\Core\Models\SystemTableModelMapper;
 use DreamFactory\Core\Resources\System\SystemResourceManager;
@@ -26,8 +25,6 @@ use Illuminate\Foundation\AliasLoader;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
-    use ServiceDocBuilder;
-
     public function register()
     {
         // Add our scripting service types.
@@ -40,9 +37,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'description'     => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'           => ServiceTypeGroups::SCRIPT,
                         'config_handler'  => NodejsConfig::class,
-                        'default_api_doc' => function ($service) {
-                            return $this->buildServiceDoc($service->id, Nodejs::getApiDocInfo($service));
-                        },
                         'factory'         => function ($config) {
                             return new Nodejs($config);
                         },
@@ -55,9 +49,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'description'     => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'           => ServiceTypeGroups::SCRIPT,
                         'config_handler'  => PhpConfig::class,
-                        'default_api_doc' => function ($service) {
-                            return $this->buildServiceDoc($service->id, Php::getApiDocInfo($service));
-                        },
                         'factory'         => function ($config) {
                             return new Php($config);
                         },
@@ -70,9 +61,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'description'     => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'           => ServiceTypeGroups::SCRIPT,
                         'config_handler'  => PythonConfig::class,
-                        'default_api_doc' => function ($service) {
-                            return $this->buildServiceDoc($service->id, Python::getApiDocInfo($service));
-                        },
                         'factory'         => function ($config) {
                             return new Python($config);
                         },
@@ -85,9 +73,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'description'     => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'           => ServiceTypeGroups::SCRIPT,
                         'config_handler'  => V8jsConfig::class,
-                        'default_api_doc' => function ($service) {
-                            return $this->buildServiceDoc($service->id, V8js::getApiDocInfo($service));
-                        },
                         'factory'         => function ($config) {
                             return new V8js($config);
                         },
