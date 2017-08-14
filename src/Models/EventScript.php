@@ -4,6 +4,8 @@ namespace DreamFactory\Core\Script\Models;
 
 use DreamFactory\Core\Exceptions\ServiceUnavailableException;
 use DreamFactory\Core\Models\BaseSystemModel;
+use DreamFactory\Core\Script\Events\EventScriptDeletedEvent;
+use DreamFactory\Core\Script\Events\EventScriptModifiedEvent;
 use Illuminate\Database\Query\Builder;
 
 /**
@@ -63,6 +65,23 @@ class EventScript extends BaseSystemModel
     ];
 
     public $incrementing = false;
+
+    public static function boot()
+    {
+        parent::boot();
+
+        static::saved(
+            function (EventScript $service) {
+                event(new EventScriptModifiedEvent($service));
+            }
+        );
+
+        static::deleted(
+            function (EventScript $service) {
+                event(new EventScriptDeletedEvent($service));
+            }
+        );
+    }
 
     public function validate($data, $throwException = true)
     {

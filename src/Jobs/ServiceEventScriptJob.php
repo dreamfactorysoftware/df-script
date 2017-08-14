@@ -57,15 +57,28 @@ class ServiceEventScriptJob extends ScriptJob
      */
     public function getEventScript($name)
     {
-        if (empty($model = EventScript::whereName($name)->whereIsActive(true)->first())) {
-            return null;
+        $cacheKey = 'event_script:' . $name;
+        try {
+            /** @var EventScript $model */
+            $model = \Cache::rememberForever($cacheKey, function () use ($name) {
+                if ($model = EventScript::whereName($name)->whereIsActive(true)->first()) {
+                    return $model;
+                }
+
+                return ''; // so that we don't hit the database even after we know it isn't there
+            });
+
+            if (!empty($model)) {
+                $model->content = \DreamFactory\Core\Utility\Session::translateLookups($model->content, true);
+                if (!is_array($model->config)) {
+                    $model->config = [];
+                }
+
+                return $model;
+            }
+        } catch (\Exception $ex) {
         }
 
-        $model->content = \DreamFactory\Core\Utility\Session::translateLookups($model->content, true);
-        if (!is_array($model->config)) {
-            $model->config = [];
-        }
-
-        return $model;
+        return null;
     }
 }

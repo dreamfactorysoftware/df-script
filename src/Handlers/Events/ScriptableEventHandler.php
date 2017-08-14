@@ -9,6 +9,9 @@ use DreamFactory\Core\Events\PostProcessApiEvent;
 use DreamFactory\Core\Events\PreProcessApiEvent;
 use DreamFactory\Core\Events\ServiceEvent;
 use DreamFactory\Core\Script\Components\ScriptHandler;
+use DreamFactory\Core\Script\Events\BaseEventScriptEvent;
+use DreamFactory\Core\Script\Events\EventScriptDeletedEvent;
+use DreamFactory\Core\Script\Events\EventScriptModifiedEvent;
 use DreamFactory\Core\Script\Jobs\ServiceEventScriptJob;
 use DreamFactory\Core\Script\Models\EventScript;
 use DreamFactory\Core\Utility\ResponseFactory;
@@ -42,6 +45,13 @@ class ScriptableEventHandler
                 ServiceEvent::class,
             ],
             static::class . '@handleServiceEvent'
+        );
+        $events->listen(
+            [
+                EventScriptModifiedEvent::class,
+                EventScriptDeletedEvent::class,
+            ],
+            static::class . '@handleEventScriptEvent'
         );
     }
 
@@ -144,17 +154,29 @@ class ScriptableEventHandler
      */
     public function getEventScript($name)
     {
-        /** @var EventScript $model */
-        if (empty($model = EventScript::whereName($name)->whereIsActive(true)->first())) {
-            return null;
+        $cacheKey = 'event_script:' . $name;
+        try {
+            /** @var EventScript $model */
+            $model = \Cache::rememberForever($cacheKey, function () use ($name) {
+                if ($model = EventScript::whereName($name)->whereIsActive(true)->first()) {
+                    return $model;
+                }
+
+                return ''; // so that we don't hit the database even after we know it isn't there
+            });
+
+            if (!empty($model)) { // see '' returned above
+                $model->content = Session::translateLookups($model->content, true);
+                if (!is_array($model->config)) {
+                    $model->config = [];
+                }
+
+                return $model;
+            }
+        } catch (\Exception $ex) {
         }
 
-        $model->content = Session::translateLookups($model->content, true);
-        if (!is_array($model->config)) {
-            $model->config = [];
-        }
-
-        return $model;
+        return null;
     }
 
     /**
@@ -172,6 +194,20 @@ class ScriptableEventHandler
         $result = $this->handleScript($script->name, $script->content, $script->type, $script->config, $event);
 
         return $result;
+    }
+
+    /**
+     * Handle queueable service events.
+     *
+     * @param BaseEventScriptEvent $event
+     *
+     * @return boolean
+     */
+    public function handleEventScriptEvent($event)
+    {
+        \Cache::forget('event_script:' . $event->script->name);
+
+        return true;
     }
 
     /**

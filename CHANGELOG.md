@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- Event script model events to utilize caching for script db queries
 
 ## [0.5.0] - 2017-07-27
 - Rework Event structure to allow for non-API driven service events
