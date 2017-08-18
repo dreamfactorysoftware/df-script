@@ -5,12 +5,11 @@ use DreamFactory\Core\Script\Components\ScriptHandler;
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
 use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Enums\ApiOptions;
+use DreamFactory\Core\Enums\Verbs;
 use DreamFactory\Core\Script\Jobs\ScriptServiceJob;
 use DreamFactory\Core\Services\BaseRestService;
 use DreamFactory\Core\Utility\ResourcesWrapper;
 use DreamFactory\Core\Utility\ResponseFactory;
-use DreamFactory\Core\Utility\Session;
-use DreamFactory\Core\Enums\Verbs;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Log;
 
@@ -43,10 +42,6 @@ class Script extends BaseRestService
      */
     protected $queued = false;
     /**
-     * @var array
-     */
-    protected $apiDoc = [];
-    /**
      * @type bool
      */
     protected $implementsAccessList = false;
@@ -67,25 +62,21 @@ class Script extends BaseRestService
     {
         parent::__construct($settings);
 
-        $config = (array)array_get($settings, 'config');
-        Session::replaceLookups($config, true);
-
-        if (!is_string($this->content = array_get($config, 'content'))) {
+        if (!is_string($this->content = array_get($this->config, 'content'))) {
             $this->content = '';
         }
 
-        $this->queued = array_get_bool($config, 'queued');
+        $this->queued = array_get_bool($this->config, 'queued');
 
-        if (empty($this->engineType = array_get($config, 'type'))) {
+        if (empty($this->engineType = array_get($this->config, 'type'))) {
             throw new \InvalidArgumentException('Script engine configuration can not be empty.');
         }
 
-        if (!is_array($this->scriptConfig = array_get($config, 'config', []))) {
+        if (!is_array($this->scriptConfig = array_get($this->config, 'config', []))) {
             $this->scriptConfig = [];
         }
 
-        $this->apiDoc = (array)array_get($settings, 'doc');
-        $this->implementsAccessList = array_get_bool($config, 'implements_access_list');
+        $this->implementsAccessList = array_get_bool($this->config, 'implements_access_list');
     }
 
     /**
@@ -110,7 +101,7 @@ class Script extends BaseRestService
     {
         $list = parent::getAccessList();
 
-        $paths = array_keys((array)array_get($this->apiDoc, 'paths'));
+        $paths = array_keys((array)array_get($this->getApiDoc(), 'paths'));
         foreach ($paths as $path) {
             // drop service from path
             if (!empty($path = ltrim(strstr(ltrim($path, '/'), '/'), '/'))) {
@@ -181,6 +172,6 @@ class Script extends BaseRestService
 
     public static function getApiDocInfo($service)
     {
-        return null;
+        return ['paths' => [], 'definitions' => []];
     }
 }
