@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+- DF-1177 & DF-1161 Added services for GitHub and GitLab with linking to server side scripting.
 
 ## [0.6.0] - 2017-08-17
 ### Changed

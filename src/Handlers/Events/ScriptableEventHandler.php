@@ -4,6 +4,8 @@ namespace DreamFactory\Core\Script\Handlers\Events;
 
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
 use DreamFactory\Core\Contracts\ServiceResponseInterface;
+use DreamFactory\Core\Enums\ServiceTypeGroups;
+use DreamFactory\Core\Enums\Verbs;
 use DreamFactory\Core\Events\ApiEvent;
 use DreamFactory\Core\Events\PostProcessApiEvent;
 use DreamFactory\Core\Events\PreProcessApiEvent;
@@ -157,7 +159,7 @@ class ScriptableEventHandler
         $cacheKey = 'event_script:' . $name;
         try {
             /** @var EventScript $model */
-            $model = \Cache::rememberForever($cacheKey, function () use ($name) {
+            $model = \Cache::rememberForever($cacheKey, function () use ($name){
                 if ($model = EventScript::whereName($name)->whereIsActive(true)->first()) {
                     return $model;
                 }
@@ -167,13 +169,69 @@ class ScriptableEventHandler
 
             if (!empty($model)) { // see '' returned above
                 $model->content = Session::translateLookups($model->content, true);
-                if (!is_array($model->config)) {
-                    $model->config = [];
+
+                if (!empty($model->storage_service_id)) {
+                    $remoteContent = \Cache::rememberForever(
+                        $cacheKey . ':remote',
+                        function () use ($model, $cacheKey){
+                            try {
+                                $serviceId = $model->storage_service_id;
+                                $storagePath = trim($model->storage_path, '/');
+                                $scmRef = $model->scm_reference;
+                                if (empty($scmRef)) {
+                                    $scmRef = null;
+                                }
+
+                                $service = \ServiceManager::getServiceById($serviceId);
+                                $serviceName = $service->getName();
+                                $typeGroup = $service->getServiceTypeInfo()->getGroup();
+
+                                if ($typeGroup === ServiceTypeGroups::SCM) {
+                                    $pathArray = explode('/', $storagePath);
+                                    $repoName = $pathArray[0];
+                                    array_shift($pathArray);
+                                    $repoPath = implode('/', $pathArray);
+                                    $result = \ServiceManager::handleRequest(
+                                        $serviceName,
+                                        Verbs::GET,
+                                        '_repo/' . $repoName,
+                                        ['path' => $repoPath, 'branch' => $scmRef, 'content' => 1]
+                                    );
+                                    $remoteContent = $result->getContent();
+                                } else {
+                                    /** @var \Symfony\Component\HttpFoundation\StreamedResponse $result */
+                                    $result = \ServiceManager::handleRequest(
+                                        $serviceName,
+                                        Verbs::GET,
+                                        $storagePath,
+                                        ['include_properties' => 1, 'content' => 1]
+                                    );
+
+                                    $remoteContent = base64_decode(array_get($result->getContent(), 'content'));
+                                }
+
+                                $model->update(['content' => $remoteContent]);
+
+                                return $remoteContent;
+                            } catch (\Exception $e) {
+                                \Log::error('Failed to fetch remote script. ' . $e->getMessage());
+                                \Cache::forget($cacheKey);
+
+                                return null;
+                            }
+                        }
+                    );
+
+                    if (!is_array($model->config)) {
+                        $model->config = [];
+                    }
+                    $model->content = Session::translateLookups($remoteContent, true);
                 }
 
                 return $model;
             }
         } catch (\Exception $ex) {
+            \Log::error('Error occurred while loading event script. ', $ex->getMessage());
         }
 
         return null;
@@ -220,7 +278,7 @@ class ScriptableEventHandler
         /** @noinspection PhpUnusedParameterInspection */
         $script,
         $result
-    ) {
+    ){
         if (array_get($result, 'stop_propagation', false)) {
             Log::info('  * Propagation stopped by script.');
 
