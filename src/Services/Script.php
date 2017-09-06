@@ -1,4 +1,5 @@
 <?php
+
 namespace DreamFactory\Core\Script\Services;
 
 use DreamFactory\Core\Script\Components\ScriptHandler;
@@ -7,10 +8,12 @@ use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Enums\ApiOptions;
 use DreamFactory\Core\Enums\Verbs;
 use DreamFactory\Core\Script\Jobs\ScriptServiceJob;
+use DreamFactory\Core\Script\Models\ScriptConfig;
 use DreamFactory\Core\Services\BaseRestService;
 use DreamFactory\Core\Utility\ResourcesWrapper;
 use DreamFactory\Core\Utility\ResponseFactory;
 use Illuminate\Foundation\Bus\DispatchesJobs;
+use DreamFactory\Core\Enums\ServiceTypeGroups;
 use Log;
 
 /**
@@ -62,7 +65,7 @@ class Script extends BaseRestService
     {
         parent::__construct($settings);
 
-        if (!is_string($this->content = array_get($this->config, 'content'))) {
+        if (!is_string($this->content = $this->getScriptContent())) {
             $this->content = '';
         }
 
@@ -77,6 +80,66 @@ class Script extends BaseRestService
         }
 
         $this->implementsAccessList = array_get_bool($this->config, 'implements_access_list');
+    }
+
+    protected function getScriptContent()
+    {
+        $cacheKey = 'script_content';
+
+        $content = $this->getFromCache($cacheKey, '');
+
+        if (empty($content)) {
+            try {
+                $storageServiceId = array_get($this->config, 'storage_service_id');
+                $storagePath = array_get($this->config, 'storage_path');
+                $scmRef = array_get($this->config, 'scm_reference');
+
+                if (empty($storageServiceId) || empty($storagePath)) {
+                    $content = array_get($this->config, 'content');
+                } else {
+                    $service = \ServiceManager::getServiceById($storageServiceId);
+                    $serviceName = $service->getName();
+                    $typeGroup = $service->getServiceTypeInfo()->getGroup();
+
+                    if ($typeGroup === ServiceTypeGroups::SCM) {
+                        $pathArray = explode('/', $storagePath);
+                        $repoName = $pathArray[0];
+                        array_shift($pathArray);
+                        $repoPath = implode('/', $pathArray);
+                        $result = \ServiceManager::handleRequest(
+                            $serviceName,
+                            Verbs::GET,
+                            '_repo/' . $repoName,
+                            ['path' => $repoPath, 'branch' => $scmRef, 'content' => 1]
+                        );
+                        $content = $result->getContent();
+                    } else {
+                        /** @var \Symfony\Component\HttpFoundation\StreamedResponse $result */
+                        $result = \ServiceManager::handleRequest(
+                            $serviceName,
+                            Verbs::GET,
+                            $storagePath,
+                            ['include_properties' => 1, 'content' => 1]
+                        );
+                        $content = base64_decode(array_get($result->getContent(), 'content'));
+                    }
+                }
+
+                $id = array_get($this->config, 'service_id');
+                if (!empty($id)) {
+                    $model = ScriptConfig::whereServiceId($id)->first();
+                    $model->update(['content' => $content]);
+                }
+
+                $this->addToCache($cacheKey, $content, true);
+            } catch (\Exception $e) {
+                \Log::error('Failed to fetch remote script. ' . $e->getMessage());
+                $this->removeFromCache($cacheKey);
+                $content = '';
+            }
+        }
+
+        return $content;
     }
 
     /**
