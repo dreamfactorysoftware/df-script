@@ -38,10 +38,10 @@ class Python extends ExecutedEngine
         $jsonEvent = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonEvent);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $jsonPlatform = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonPlatform);
-        $protocol = "'http'";
+        $protocol = config('df.scripting.default_protocol', 'http');
         $https = array_get($_SERVER, 'HTTPS');
         if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
-            $protocol = "'https'";
+            $protocol = 'https';
         }
         $token = uniqid();
         $tokenCache = [
@@ -66,7 +66,7 @@ _event = bunchify(eventJson);
 _platform = bunchify(platformJson);
 
 
-__protocol = $protocol;
+__protocol = '$protocol';
 __host = _event.request.headers.host;
 __headers = {
     'x-dreamfactory-script-token':'$token'
