@@ -170,7 +170,7 @@ class ScriptableEventHandler
             if (!empty($model)) { // see '' returned above
                 $model->content = Session::translateLookups($model->content, true);
 
-                if (!empty($model->storage_service_id)) {
+                if (!empty($model->storage_service_id) && !empty($model->storage_path)) {
                     $remoteContent = \Cache::rememberForever(
                         $cacheKey . ':remote',
                         function () use ($model, $cacheKey){
