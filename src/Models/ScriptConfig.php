@@ -26,6 +26,7 @@ class ScriptConfig extends BaseServiceConfigModel
         'queued',
         'storage_service_id',
         'scm_reference',
+        'scm_repository',
         'storage_path'
     ];
 
@@ -108,6 +109,9 @@ class ScriptConfig extends BaseServiceConfigModel
                     '- QUEUED_DELAY = #seconds to delay the execution of the script.<br>' .
                     '- QUEUED_QUEUE= alternative queue from the system configuration.<br>' .
                     '- QUEUED_CONNECTION = alternative queue connection from the system configuration.';
+                break;
+            case 'storage_service_id':
+                $schema['type'] = 'integer';
                 break;
         }
     }

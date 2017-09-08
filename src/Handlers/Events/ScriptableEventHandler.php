@@ -177,6 +177,7 @@ class ScriptableEventHandler
                             try {
                                 $serviceId = $model->storage_service_id;
                                 $storagePath = trim($model->storage_path, '/');
+                                $scmRepo = $model->scm_repository;
                                 $scmRef = $model->scm_reference;
                                 if (empty($scmRef)) {
                                     $scmRef = null;
@@ -187,15 +188,11 @@ class ScriptableEventHandler
                                 $typeGroup = $service->getServiceTypeInfo()->getGroup();
 
                                 if ($typeGroup === ServiceTypeGroups::SCM) {
-                                    $pathArray = explode('/', $storagePath);
-                                    $repoName = $pathArray[0];
-                                    array_shift($pathArray);
-                                    $repoPath = implode('/', $pathArray);
                                     $result = \ServiceManager::handleRequest(
                                         $serviceName,
                                         Verbs::GET,
-                                        '_repo/' . $repoName,
-                                        ['path' => $repoPath, 'branch' => $scmRef, 'content' => 1]
+                                        '_repo/' . $scmRepo,
+                                        ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
                                     );
                                     $remoteContent = $result->getContent();
                                 } else {

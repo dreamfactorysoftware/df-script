@@ -58,6 +58,7 @@ class EventScript extends BaseSystemModel
         'storage_service_id',
         'storage_path',
         'scm_reference',
+        'scm_repository',
         'is_active',
         'allow_event_modification'
     ];

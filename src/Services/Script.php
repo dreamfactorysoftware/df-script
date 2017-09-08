@@ -82,6 +82,9 @@ class Script extends BaseRestService
         $this->implementsAccessList = array_get_bool($this->config, 'implements_access_list');
     }
 
+    /**
+     * @return bool|mixed|string
+     */
     protected function getScriptContent()
     {
         $cacheKey = 'script_content';
@@ -91,7 +94,8 @@ class Script extends BaseRestService
         if (empty($content)) {
             try {
                 $storageServiceId = array_get($this->config, 'storage_service_id');
-                $storagePath = array_get($this->config, 'storage_path');
+                $storagePath = trim(array_get($this->config, 'storage_path'), '/');
+                $scmRepo = array_get($this->config, 'scm_repository');
                 $scmRef = array_get($this->config, 'scm_reference');
 
                 if (empty($storageServiceId) || empty($storagePath)) {
@@ -102,15 +106,11 @@ class Script extends BaseRestService
                     $typeGroup = $service->getServiceTypeInfo()->getGroup();
 
                     if ($typeGroup === ServiceTypeGroups::SCM) {
-                        $pathArray = explode('/', $storagePath);
-                        $repoName = $pathArray[0];
-                        array_shift($pathArray);
-                        $repoPath = implode('/', $pathArray);
                         $result = \ServiceManager::handleRequest(
                             $serviceName,
                             Verbs::GET,
-                            '_repo/' . $repoName,
-                            ['path' => $repoPath, 'branch' => $scmRef, 'content' => 1]
+                            '_repo/' . $scmRepo,
+                            ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
                         );
                         $content = $result->getContent();
                     } else {

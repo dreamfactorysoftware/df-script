@@ -13,19 +13,29 @@ class UpdateScriptTablesForServiceLinking extends Migration
      */
     public function up()
     {
+        $driver = Schema::getConnection()->getDriverName();
+        // Even though we take care of this scenario in the code,
+        // SQL Server does not allow potential cascading loops,
+        // so set the default no action and clear out created/modified by another user when deleting a user.
+        $onDelete = (('sqlsrv' === $driver) ? 'no action' : 'set null');
+
         if(Schema::hasTable('script_config') && !Schema::hasColumn('script_config', 'storage_service_id')){
-            Schema::table('script_config', function (Blueprint $t){
+            Schema::table('script_config', function (Blueprint $t) use ($onDelete) {
                 $t->string('scm_reference')->nullable()->after('config');
+                $t->string('scm_repository')->nullable()->after('config');
                 $t->string('storage_path')->nullable()->after('config');
                 $t->integer('storage_service_id')->unsigned()->nullable()->after('config');
+                $t->foreign('storage_service_id')->references('id')->on('service')->onDelete($onDelete);
             });
         }
 
         if(Schema::hasTable('event_script') && !Schema::hasColumn('event_script', 'storage_service_id')){
-            Schema::table('event_script', function (Blueprint $t){
+            Schema::table('event_script', function (Blueprint $t) use ($onDelete) {
                 $t->string('scm_reference')->nullable()->after('config');
+                $t->string('scm_repository')->nullable()->after('config');
                 $t->string('storage_path')->nullable()->after('config');
                 $t->integer('storage_service_id')->unsigned()->nullable()->after('config');
+                $t->foreign('storage_service_id')->references('id')->on('service')->onDelete($onDelete);
             });
         }
     }
