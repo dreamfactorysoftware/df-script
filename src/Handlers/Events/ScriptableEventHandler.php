@@ -219,10 +219,11 @@ class ScriptableEventHandler
                         }
                     );
 
-                    if (!is_array($model->config)) {
-                        $model->config = [];
-                    }
                     $model->content = Session::translateLookups($remoteContent, true);
+                }
+
+                if (!is_array($model->config)) {
+                    $model->config = [];
                 }
 
                 return $model;

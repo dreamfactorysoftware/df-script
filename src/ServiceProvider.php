@@ -110,6 +110,9 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
         $this->app->singleton('df.script', function ($app) {
             return new ScriptEngineManager($app);
         });
+
+        // merge in df config, https://laravel.com/docs/5.4/packages#resources
+        $this->mergeConfigFrom(__DIR__ . '/../config/df.php', 'df');
     }
 
     public function boot()
