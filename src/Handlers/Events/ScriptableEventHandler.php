@@ -10,6 +10,8 @@ use DreamFactory\Core\Events\ApiEvent;
 use DreamFactory\Core\Events\PostProcessApiEvent;
 use DreamFactory\Core\Events\PreProcessApiEvent;
 use DreamFactory\Core\Events\ServiceEvent;
+use DreamFactory\Core\Exceptions\InternalServerErrorException;
+use DreamFactory\Core\Resources\System\Cache;
 use DreamFactory\Core\Script\Components\ScriptHandler;
 use DreamFactory\Core\Script\Events\BaseEventScriptEvent;
 use DreamFactory\Core\Script\Events\EventScriptDeletedEvent;
@@ -156,11 +158,54 @@ class ScriptableEventHandler
      */
     public function getEventScript($name)
     {
-        $cacheKey = 'event_script:' . $name;
+        $cacheKey = Cache::EVENT_SCRIPT_CACHE_PREFIX . $name;
         try {
             /** @var EventScript $model */
             $model = \Cache::rememberForever($cacheKey, function () use ($name){
                 if ($model = EventScript::whereName($name)->whereIsActive(true)->first()) {
+                    if (!empty($model->storage_service_id) && !empty($model->storage_path)) {
+                        try {
+                            $serviceId = $model->storage_service_id;
+                            $service = \ServiceManager::getServiceById($serviceId);
+                            $storagePath = trim($model->storage_path, '/');
+                            $scmRepo = $model->scm_repository;
+                            $scmRef = $model->scm_reference;
+                            if (empty($scmRef)) {
+                                $scmRef = null;
+                            }
+                            $serviceName = $service->getName();
+                            $typeGroup = $service->getServiceTypeInfo()->getGroup();
+
+                            if ($typeGroup === ServiceTypeGroups::SCM) {
+                                $result = \ServiceManager::handleRequest(
+                                    $serviceName,
+                                    Verbs::GET,
+                                    '_repo/' . $scmRepo,
+                                    ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
+                                );
+                                $remoteContent = $result->getContent();
+                            } else {
+                                /** @var \Symfony\Component\HttpFoundation\StreamedResponse $result */
+                                $result = \ServiceManager::handleRequest(
+                                    $serviceName,
+                                    Verbs::GET,
+                                    $storagePath,
+                                    ['include_properties' => 1, 'content' => 1]
+                                );
+
+                                $remoteContent = base64_decode(array_get($result->getContent(), 'content'));
+                            }
+
+                            // Updating $model directly causes cache error - You cannot serialize or unserialize PDO instances.
+                            // Therefore updating model using a separate query.
+                            EventScript::whereName($name)->update(['content' => $remoteContent]);
+                            $model->content = $remoteContent;
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to fetch remote script. ' . $e->getMessage());
+                            throw $e;
+                        }
+                    }
+
                     return $model;
                 }
 
@@ -169,59 +214,6 @@ class ScriptableEventHandler
 
             if (!empty($model)) { // see '' returned above
                 $model->content = Session::translateLookups($model->content, true);
-
-                if (!empty($model->storage_service_id) && !empty($model->storage_path)) {
-                    $remoteContent = \Cache::rememberForever(
-                        $cacheKey . ':remote',
-                        function () use ($model, $cacheKey){
-                            try {
-                                $serviceId = $model->storage_service_id;
-                                $storagePath = trim($model->storage_path, '/');
-                                $scmRepo = $model->scm_repository;
-                                $scmRef = $model->scm_reference;
-                                if (empty($scmRef)) {
-                                    $scmRef = null;
-                                }
-
-                                $service = \ServiceManager::getServiceById($serviceId);
-                                $serviceName = $service->getName();
-                                $typeGroup = $service->getServiceTypeInfo()->getGroup();
-
-                                if ($typeGroup === ServiceTypeGroups::SCM) {
-                                    $result = \ServiceManager::handleRequest(
-                                        $serviceName,
-                                        Verbs::GET,
-                                        '_repo/' . $scmRepo,
-                                        ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
-                                    );
-                                    $remoteContent = $result->getContent();
-                                } else {
-                                    /** @var \Symfony\Component\HttpFoundation\StreamedResponse $result */
-                                    $result = \ServiceManager::handleRequest(
-                                        $serviceName,
-                                        Verbs::GET,
-                                        $storagePath,
-                                        ['include_properties' => 1, 'content' => 1]
-                                    );
-
-                                    $remoteContent = base64_decode(array_get($result->getContent(), 'content'));
-                                }
-
-                                $model->update(['content' => $remoteContent]);
-
-                                return $remoteContent;
-                            } catch (\Exception $e) {
-                                \Log::error('Failed to fetch remote script. ' . $e->getMessage());
-                                \Cache::forget($cacheKey);
-
-                                return null;
-                            }
-                        }
-                    );
-
-                    $model->content = Session::translateLookups($remoteContent, true);
-                }
-
                 if (!is_array($model->config)) {
                     $model->config = [];
                 }
@@ -261,7 +253,7 @@ class ScriptableEventHandler
      */
     public function handleEventScriptEvent($event)
     {
-        \Cache::forget('event_script:' . $event->script->name);
+        \Cache::forget(Cache::EVENT_SCRIPT_CACHE_PREFIX . $event->script->name);
 
         return true;
     }
