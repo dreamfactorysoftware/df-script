@@ -25,7 +25,7 @@
     }
   ],
   "require":     {
-    "dreamfactory/df-core": "~0.12.0"
+    "dreamfactory/df-core": "~0.12.2"
   },
   "autoload":    {
     "psr-4": {
