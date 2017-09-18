@@ -4,6 +4,7 @@ namespace DreamFactory\Core\Script\Jobs;
 
 use Crypt;
 use DreamFactory\Core\Events\ServiceEvent;
+use DreamFactory\Core\Resources\System\Cache;
 use DreamFactory\Core\Script\Models\EventScript;
 use Log;
 use Session;
@@ -57,7 +58,7 @@ class ServiceEventScriptJob extends ScriptJob
      */
     public function getEventScript($name)
     {
-        $cacheKey = 'event_script:' . $name;
+        $cacheKey = Cache::EVENT_SCRIPT_CACHE_PREFIX . $name;
         try {
             /** @var EventScript $model */
             $model = \Cache::rememberForever($cacheKey, function () use ($name) {

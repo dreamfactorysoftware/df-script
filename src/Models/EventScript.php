@@ -55,13 +55,18 @@ class EventScript extends BaseSystemModel
         'type',
         'content',
         'config',
+        'storage_service_id',
+        'storage_path',
+        'scm_reference',
+        'scm_repository',
         'is_active',
         'allow_event_modification'
     ];
 
     protected $casts = [
         'is_active'                => 'boolean',
-        'allow_event_modification' => 'boolean'
+        'allow_event_modification' => 'boolean',
+        'storage_service_id'       => 'integer',
     ];
 
     public $incrementing = false;
@@ -71,13 +76,13 @@ class EventScript extends BaseSystemModel
         parent::boot();
 
         static::saved(
-            function (EventScript $service) {
+            function (EventScript $service){
                 event(new EventScriptModifiedEvent($service));
             }
         );
 
         static::deleted(
-            function (EventScript $service) {
+            function (EventScript $service){
                 event(new EventScriptDeletedEvent($service));
             }
         );

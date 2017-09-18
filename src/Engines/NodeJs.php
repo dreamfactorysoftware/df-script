@@ -61,10 +61,10 @@ class NodeJs extends ExecutedEngine
     {
         $jsonEvent = $this->safeJsonEncode($data, false);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
-        $protocol = "'http'";
+        $protocol = config('df.scripting.default_protocol', 'http');
         $https = array_get($_SERVER, 'HTTPS');
         if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
-            $protocol = "'https'";
+            $protocol = "https";
         }
         $token = uniqid();
         $tokenCache = [
@@ -84,7 +84,7 @@ _wrapperResult = (function() {
     //noinspection JSUnresolvedVariable
     var _platform = {$jsonPlatform};
     //noinspection JSUnresolvedVariable
-    var _protocol = {$protocol};
+    var _protocol = '{$protocol}';
     //noinspection JSUnresolvedVariable
     var _token = '{$token}';
     //noinspection JSUnresolvedVariable
