@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Changed
+- DF-1222 Removing write to database from script caching so that lookups are not processed prematurely
 
 ## [0.6.1] - 2017-09-18
 ### Added

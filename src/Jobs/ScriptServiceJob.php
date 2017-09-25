@@ -4,9 +4,9 @@ namespace DreamFactory\Core\Script\Jobs;
 
 use Crypt;
 use DreamFactory\Core\Contracts\ServiceRequestInterface;
-use DreamFactory\Core\Models\Service;
-use DreamFactory\Core\Utility\Session;
+use DreamFactory\Core\Script\Services\Script;
 use Log;
+use ServiceManager;
 
 class ScriptServiceJob extends ScriptJob
 {
@@ -43,14 +43,8 @@ class ScriptServiceJob extends ScriptJob
     public function handle()
     {
         Log::notice('Queued Script handled for ' . $this->service_id);
-        if (!empty($service = Service::whereId($this->service_id)->first())) {
-
-            $service->protectedView = false;
-            $script = $service->getConfigAttribute();
-            $script['content'] = Session::translateLookups(array_get($script, 'content'), true);
-            if (!isset($script['config']) || !is_array($script['config'])) {
-                $script['config'] = [];
-            }
+        /** @var Script $service */
+        if (!empty($service = ServiceManager::getServiceById($this->service_id))) {
 
             $session = json_decode(Crypt::decrypt($this->session), true);
             \Session::replace($session);
@@ -61,10 +55,10 @@ class ScriptServiceJob extends ScriptJob
             ];
 
             $logOutput = (isset($data['request']['parameters']['log_output']) ? $data['request']['parameters']['log_output'] : true);
-            if (null !== $this->handleScript('service.' . $service->name, $script['content'], $service->type,
-                    $script['config'], $data, $logOutput)
+            if (null !== $this->handleScript('service.' . $service->getName(), $service->getScriptContent(),
+                    $service->getType(), $service->getScriptConfig(), $data, $logOutput)
             ) {
-                Log::notice('Queued Script success for ' . $service->name);
+                Log::notice('Queued Script success for ' . $service->getName());
             }
         }
     }

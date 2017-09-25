@@ -10,7 +10,6 @@ use DreamFactory\Core\Events\ApiEvent;
 use DreamFactory\Core\Events\PostProcessApiEvent;
 use DreamFactory\Core\Events\PreProcessApiEvent;
 use DreamFactory\Core\Events\ServiceEvent;
-use DreamFactory\Core\Exceptions\InternalServerErrorException;
 use DreamFactory\Core\Resources\System\Cache;
 use DreamFactory\Core\Script\Components\ScriptHandler;
 use DreamFactory\Core\Script\Events\BaseEventScriptEvent;
@@ -19,15 +18,13 @@ use DreamFactory\Core\Script\Events\EventScriptModifiedEvent;
 use DreamFactory\Core\Script\Jobs\ServiceEventScriptJob;
 use DreamFactory\Core\Script\Models\EventScript;
 use DreamFactory\Core\Utility\ResponseFactory;
-use DreamFactory\Core\Utility\Session;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Log;
 
 class ScriptableEventHandler
 {
-    use ScriptHandler;
-    use DispatchesJobs;
+    use ScriptHandler, DispatchesJobs;
 
     /**
      * Register the listeners for the subscriber.
@@ -161,7 +158,7 @@ class ScriptableEventHandler
         $cacheKey = Cache::EVENT_SCRIPT_CACHE_PREFIX . $name;
         try {
             /** @var EventScript $model */
-            $model = \Cache::rememberForever($cacheKey, function () use ($name){
+            $model = \Cache::rememberForever($cacheKey, function () use ($name) {
                 if ($model = EventScript::whereName($name)->whereIsActive(true)->first()) {
                     if (!empty($model->storage_service_id) && !empty($model->storage_path)) {
                         try {
@@ -183,9 +180,8 @@ class ScriptableEventHandler
                                     '_repo/' . $scmRepo,
                                     ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
                                 );
-                                $remoteContent = $result->getContent();
+                                $model->content = $result->getContent();
                             } else {
-                                /** @var \Symfony\Component\HttpFoundation\StreamedResponse $result */
                                 $result = \ServiceManager::handleRequest(
                                     $serviceName,
                                     Verbs::GET,
@@ -193,13 +189,8 @@ class ScriptableEventHandler
                                     ['include_properties' => 1, 'content' => 1]
                                 );
 
-                                $remoteContent = base64_decode(array_get($result->getContent(), 'content'));
+                                $model->content = base64_decode(array_get($result->getContent(), 'content'));
                             }
-
-                            // Updating $model directly causes cache error - You cannot serialize or unserialize PDO instances.
-                            // Therefore updating model using a separate query.
-                            EventScript::whereName($name)->update(['content' => $remoteContent]);
-                            $model->content = $remoteContent;
                         } catch (\Exception $e) {
                             \Log::error('Failed to fetch remote script. ' . $e->getMessage());
                             throw $e;
@@ -213,11 +204,6 @@ class ScriptableEventHandler
             });
 
             if (!empty($model)) { // see '' returned above
-                $model->content = Session::translateLookups($model->content, true);
-                if (!is_array($model->config)) {
-                    $model->config = [];
-                }
-
                 return $model;
             }
         } catch (\Exception $ex) {
@@ -268,7 +254,7 @@ class ScriptableEventHandler
         /** @noinspection PhpUnusedParameterInspection */
         $script,
         $result
-    ){
+    ) {
         if (array_get($result, 'stop_propagation', false)) {
             Log::info('  * Propagation stopped by script.');
 
