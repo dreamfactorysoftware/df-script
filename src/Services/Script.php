@@ -228,8 +228,56 @@ class Script extends BaseRestService
         return ResponseFactory::create($result);
     }
 
-    public static function getApiDocInfo($service)
+    protected function getEventName()
     {
-        return ['paths' => [], 'definitions' => []];
+        if (!empty($this->resourcePath) && (null !== $match = $this->matchEventPath($this->resourcePath))) {
+            return parent::getEventName() . '.' . $match['path'];
+        }
+
+        return parent::getEventName();
+    }
+
+    protected function getEventResource()
+    {
+        if (!empty($this->resourcePath) && (null !== $match = $this->matchEventPath($this->resourcePath))) {
+            return $match['resource'];
+        }
+
+        return parent::getEventResource();
+    }
+
+    protected function matchEventPath($search)
+    {
+        $paths = array_keys((array)array_get($this->getApiDoc(), 'paths'));
+        $pieces = explode('/', $search);
+        foreach ($paths as $path) {
+            // drop service from path
+            $path = trim($path, '/');
+            $pathPieces = explode('/', $path);
+            if (count($pieces) === count($pathPieces)) {
+                if (empty($diffs = array_diff($pathPieces, $pieces))) {
+                    return ['path' => str_replace('/', '.', trim($path, '/')), 'resource' => null];
+                }
+
+                $resources = [];
+                foreach ($diffs as $ndx => $diff) {
+                    if (0 !== strpos($diff, '{')) {
+                        // not a replacement parameters, see if another path works
+                        continue 2;
+                    }
+
+                    $resources[$diff] = $pieces[$ndx];
+                }
+
+                return ['path' => str_replace('/', '.', trim($path, '/')), 'resource' => $resources];
+            }
+        }
+
+        return null;
+    }
+
+    public function getApiDocInfo()
+    {
+        return ['paths' => [], 'components' => []];
     }
 }
