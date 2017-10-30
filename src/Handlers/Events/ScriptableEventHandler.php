@@ -221,7 +221,7 @@ class ScriptableEventHandler
                 return $model;
             }
         } catch (\Exception $ex) {
-            \Log::error('Error occurred while loading event script. ', $ex->getMessage());
+            \Log::error('Error occurred while loading event script. ' . $ex->getMessage());
         }
 
         return null;
