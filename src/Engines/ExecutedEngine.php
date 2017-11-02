@@ -1,4 +1,5 @@
 <?php
+
 namespace DreamFactory\Core\Script\Engines;
 
 use DreamFactory\Core\Components\PhpExecutable;
@@ -13,6 +14,8 @@ use \Log;
 abstract class ExecutedEngine extends BaseEngineAdapter
 {
     use PhpExecutable;
+
+    protected $scriptFile = null;
 
     /**
      * @param array $settings
@@ -36,6 +39,17 @@ abstract class ExecutedEngine extends BaseEngineAdapter
     }
 
     /**
+     * Delete any local script file that
+     * was created during execution
+     */
+    public function __destruct()
+    {
+        if (!empty($this->scriptFile) && file_exists($this->scriptFile)) {
+            @unlink($this->scriptFile);
+        }
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function executeString($script, $identifier, array &$data = [], array $engineArguments = [])
@@ -43,8 +57,8 @@ abstract class ExecutedEngine extends BaseEngineAdapter
         $data['__tag__'] = 'exposed_event';
 
         $enrobedScript = $this->enrobeScript($script, $data, static::buildPlatformAccess($identifier));
-        $filePath = $this->getWritablePath($identifier);
-        $runnerShell = $this->buildCommand($enrobedScript, $filePath);
+        $this->scriptFile = $this->getWritablePath($identifier);
+        $runnerShell = $this->buildCommand($enrobedScript, $this->scriptFile);
 
         $output = null;
         $return = null;

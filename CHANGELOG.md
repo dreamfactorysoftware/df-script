@@ -9,6 +9,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## [0.6.2] - 2017-10-30
 ### Fixed
 - Fix typo in error log output handling
+- Fixed NodJS (and Python) scripting error due to big data set in scripts
 
 ## [0.6.1] - 2017-09-18
 ### Added
