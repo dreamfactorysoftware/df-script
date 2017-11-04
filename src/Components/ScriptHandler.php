@@ -4,6 +4,7 @@ namespace DreamFactory\Core\Script\Components;
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
 use DreamFactory\Core\Exceptions\InternalServerErrorException;
 use DreamFactory\Core\Exceptions\RestException;
+use DreamFactory\Core\Utility\Session;
 use ScriptEngineManager;
 use Log;
 
@@ -26,6 +27,12 @@ trait ScriptHandler
      */
     public function handleScript($identifier, $script, $type, $config, &$data, $log_output = true)
     {
+        $script = Session::translateLookups($script, true);
+        $config = Session::translateLookups($config, true);
+        if (!is_array($config)) {
+            $config = [];
+        }
+
         $engine = ScriptEngineManager::makeEngine($type, $config);
 
         $output = null;

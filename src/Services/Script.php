@@ -2,18 +2,17 @@
 
 namespace DreamFactory\Core\Script\Services;
 
-use DreamFactory\Core\Script\Components\ScriptHandler;
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
 use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Enums\ApiOptions;
+use DreamFactory\Core\Enums\ServiceTypeGroups;
 use DreamFactory\Core\Enums\Verbs;
+use DreamFactory\Core\Script\Components\ScriptHandler;
 use DreamFactory\Core\Script\Jobs\ScriptServiceJob;
-use DreamFactory\Core\Script\Models\ScriptConfig;
 use DreamFactory\Core\Services\BaseRestService;
 use DreamFactory\Core\Utility\ResourcesWrapper;
 use DreamFactory\Core\Utility\ResponseFactory;
 use Illuminate\Foundation\Bus\DispatchesJobs;
-use DreamFactory\Core\Enums\ServiceTypeGroups;
 use Log;
 
 /**
@@ -63,11 +62,10 @@ class Script extends BaseRestService
      */
     public function __construct($settings = [])
     {
-        parent::__construct($settings);
+        // parent handles the lookup replacement, don't want that yet for script content
+        $this->content = array_get($settings, 'config.content');
 
-        if (!is_string($this->content = $this->getScriptContent())) {
-            $this->content = '';
-        }
+        parent::__construct($settings);
 
         $this->queued = array_get_bool($this->config, 'queued');
 
@@ -83,24 +81,29 @@ class Script extends BaseRestService
     }
 
     /**
+     * @return null|array
+     */
+    public function getScriptConfig()
+    {
+        return $this->scriptConfig;
+    }
+
+    /**
      * @return bool|mixed|string
      */
-    protected function getScriptContent()
+    public function getScriptContent()
     {
         $cacheKey = 'script_content';
 
-        $content = $this->getFromCache($cacheKey, '');
+        if (empty($content = $this->getFromCache($cacheKey, ''))) {
+            $storageServiceId = array_get($this->config, 'storage_service_id');
+            $storagePath = trim(array_get($this->config, 'storage_path'), '/');
+            $scmRepo = array_get($this->config, 'scm_repository');
+            $scmRef = array_get($this->config, 'scm_reference');
 
-        if (empty($content)) {
-            try {
-                $storageServiceId = array_get($this->config, 'storage_service_id');
-                $storagePath = trim(array_get($this->config, 'storage_path'), '/');
-                $scmRepo = array_get($this->config, 'scm_repository');
-                $scmRef = array_get($this->config, 'scm_reference');
-
-                if (empty($storageServiceId) || empty($storagePath)) {
-                    $content = array_get($this->config, 'content');
-                } else {
+            $content = strval($this->content);
+            if (!empty($storageServiceId) && !empty($storagePath)) {
+                try {
                     $service = \ServiceManager::getServiceById($storageServiceId);
                     $serviceName = $service->getName();
                     $typeGroup = $service->getServiceTypeInfo()->getGroup();
@@ -114,7 +117,6 @@ class Script extends BaseRestService
                         );
                         $content = $result->getContent();
                     } else {
-                        /** @var \Symfony\Component\HttpFoundation\StreamedResponse $result */
                         $result = \ServiceManager::handleRequest(
                             $serviceName,
                             Verbs::GET,
@@ -123,20 +125,13 @@ class Script extends BaseRestService
                         );
                         $content = base64_decode(array_get($result->getContent(), 'content'));
                     }
+                } catch (\Exception $e) {
+                    \Log::error('Failed to fetch remote script. ' . $e->getMessage());
+                    $content = '';
                 }
-
-                $id = array_get($this->config, 'service_id');
-                if (!empty($id)) {
-                    $model = ScriptConfig::whereServiceId($id)->first();
-                    $model->update(['content' => $content]);
-                }
-
-                $this->addToCache($cacheKey, $content, true);
-            } catch (\Exception $e) {
-                \Log::error('Failed to fetch remote script. ' . $e->getMessage());
-                $this->removeFromCache($cacheKey);
-                $content = '';
             }
+
+            $this->addToCache($cacheKey, $content, true);
         }
 
         return $content;
@@ -214,8 +209,8 @@ class Script extends BaseRestService
         $data = $this->getRequestData();
 
         $logOutput = $this->request->getParameterAsBool('log_output', true);
-        $result = $this->handleScript('service.' . $this->name, $this->content, $this->engineType, $this->scriptConfig,
-            $data, $logOutput);
+        $result = $this->handleScript('service.' . $this->name, $this->getScriptContent(), $this->engineType,
+            $this->scriptConfig, $data, $logOutput);
 
         if (is_array($result) && array_key_exists('response', $result)) {
             $result = array_get($result, 'response', []);
@@ -233,8 +228,56 @@ class Script extends BaseRestService
         return ResponseFactory::create($result);
     }
 
-    public static function getApiDocInfo($service)
+    protected function getEventName()
     {
-        return ['paths' => [], 'definitions' => []];
+        if (!empty($this->resourcePath) && (null !== $match = $this->matchEventPath($this->resourcePath))) {
+            return parent::getEventName() . '.' . $match['path'];
+        }
+
+        return parent::getEventName();
+    }
+
+    protected function getEventResource()
+    {
+        if (!empty($this->resourcePath) && (null !== $match = $this->matchEventPath($this->resourcePath))) {
+            return $match['resource'];
+        }
+
+        return parent::getEventResource();
+    }
+
+    protected function matchEventPath($search)
+    {
+        $paths = array_keys((array)array_get($this->getApiDoc(), 'paths'));
+        $pieces = explode('/', $search);
+        foreach ($paths as $path) {
+            // drop service from path
+            $path = trim($path, '/');
+            $pathPieces = explode('/', $path);
+            if (count($pieces) === count($pathPieces)) {
+                if (empty($diffs = array_diff($pathPieces, $pieces))) {
+                    return ['path' => str_replace('/', '.', trim($path, '/')), 'resource' => null];
+                }
+
+                $resources = [];
+                foreach ($diffs as $ndx => $diff) {
+                    if (0 !== strpos($diff, '{')) {
+                        // not a replacement parameters, see if another path works
+                        continue 2;
+                    }
+
+                    $resources[$diff] = $pieces[$ndx];
+                }
+
+                return ['path' => str_replace('/', '.', trim($path, '/')), 'resource' => $resources];
+            }
+        }
+
+        return null;
+    }
+
+    public function getApiDocInfo()
+    {
+        return ['paths' => [], 'components' => []];
     }
 }

@@ -17,6 +17,10 @@ use Illuminate\Database\Query\Builder;
  * @property array   $config
  * @property boolean $is_active
  * @property boolean $allow_event_modification
+ * @property integer $storage_service_id
+ * @property string  $storage_path
+ * @property string  $scm_reference
+ * @property string  $scm_repository
  * @method static Builder|EventScript whereIsActive($value)
  * @method static Builder|EventScript whereName($value)
  * @method static Builder|EventScript whereType($value)

@@ -70,11 +70,6 @@ class ServiceEventScriptJob extends ScriptJob
             });
 
             if (!empty($model)) {
-                $model->content = \DreamFactory\Core\Utility\Session::translateLookups($model->content, true);
-                if (!is_array($model->config)) {
-                    $model->config = [];
-                }
-
                 return $model;
             }
         } catch (\Exception $ex) {
