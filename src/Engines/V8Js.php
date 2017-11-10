@@ -59,7 +59,7 @@ class V8Js extends BaseEngineAdapter
         parent::__construct($settings);
 
         if (!extension_loaded('v8js')) {
-            throw new ServiceUnavailableException("This instance cannot run server-side javascript scripts. The 'v8js' is not available.");
+            throw new ServiceUnavailableException("This instance cannot run server-side javascript scripts. The 'v8js' extension is not available.");
         }
 
         $name = array_get($settings, 'name', self::EXPOSED_OBJECT_NAME);
@@ -68,7 +68,6 @@ class V8Js extends BaseEngineAdapter
         // accept comma-delimited string
         $extensions = (is_string($extensions)) ? array_map('trim', explode(',', trim($extensions, ','))) : $extensions;
         $reportUncaughtExceptions = array_get_bool($settings, 'report_uncaught_exceptions');
-        $logMemoryUsage = array_get_bool($settings, 'log_memory_usage');
 
         static::startup($settings);
 
@@ -90,16 +89,6 @@ class V8Js extends BaseEngineAdapter
             /** @noinspection PhpUndefinedClassInspection */
             Log::debug('  * no "require()" support in V8 library v' . \V8Js::V8_VERSION);
         }
-
-        if ($logMemoryUsage) {
-            /** @noinspection PhpUndefinedMethodInspection */
-            $loadedExtensions = $this->engine->getExtensions();
-
-            Log::debug(
-                '  * engine created with the following extensions: ' .
-                (!empty($loadedExtensions) ? implode(', ', array_keys($loadedExtensions)) : '**NONE**')
-            );
-        }
     }
 
     /**
@@ -117,16 +106,7 @@ class V8Js extends BaseEngineAdapter
         $mirror = new \ReflectionClass('\\V8Js');
 
         /** @noinspection PhpUndefinedMethodInspection */
-        if (false !== (static::$moduleLoaderAvailable = $mirror->hasMethod('setModuleLoader'))) {
-        }
-
-        //  Register any extensions
-        if (null !== $extensions = array_get($options, 'extensions', [])) {
-            // accept comma-delimited string
-            $extensions =
-                (is_string($extensions)) ? array_map('trim', explode(',', trim($extensions, ','))) : $extensions;
-            static::registerExtensions($extensions);
-        }
+        static::$moduleLoaderAvailable = $mirror->hasMethod('setModuleLoader');
     }
 
     public static function buildPlatformAccess($identifier)
@@ -292,41 +272,6 @@ class V8Js extends BaseEngineAdapter
         $content = file_get_contents($fullScriptPath);
 
         return $content;
-    }
-
-    /**
-     * Registers all distribution library modules as extensions.
-     * These can be accessed from scripts like this:
-     *
-     * require("lodash");
-     *
-     * var a = [ 'one', 'two', 'three' ];
-     *
-     * _.each( a, function( element ) {
-     *      print( "Found " + element + " in array\n" );
-     * });
-     *
-     * Please note that this requires a version of the V8 library equal to or above 0.2.0.
-     *
-     * @param array $extensions
-     *
-     * @return array
-     * @throws \DreamFactory\Core\Exceptions\InternalServerErrorException
-     */
-    protected static function registerExtensions(array $extensions = [])
-    {
-        /** @noinspection PhpUndefinedClassInspection */
-        $existing = \V8Js::getExtensions();
-        $registered = array_diff($extensions, $existing);
-
-        foreach ($registered as $module) {
-            /** @noinspection PhpUndefinedClassInspection */
-            if (false === \V8Js::registerExtension($module, static::loadScriptingModule($module), [], false)) {
-                throw new InternalServerErrorException('Failed to register V8Js extension script: ' . $module);
-            }
-        }
-
-        return $registered;
     }
 
     /**
