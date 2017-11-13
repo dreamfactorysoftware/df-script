@@ -67,13 +67,12 @@ class V8Js extends BaseEngineAdapter
         $extensions = array_get($settings, 'extensions', []);
         // accept comma-delimited string
         $extensions = (is_string($extensions)) ? array_map('trim', explode(',', trim($extensions, ','))) : $extensions;
-        $reportUncaughtExceptions = array_get_bool($settings, 'report_uncaught_exceptions');
 
         static::startup($settings);
 
         //  Set up our script mappings for module loading
         /** @noinspection PhpUndefinedClassInspection */
-        $this->engine = new \V8Js($name, $variables, $extensions, $reportUncaughtExceptions);
+        $this->engine = new \V8Js($name, $variables, $extensions);
 
         /**
          * This is the callback for the exposed "require()" function in the sandbox
