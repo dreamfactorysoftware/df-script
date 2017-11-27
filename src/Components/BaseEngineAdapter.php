@@ -367,7 +367,14 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
             throw new RestException($status, $result, $status);
         }
 
-        return ResponseFactory::create($result, $contentType, $status);
+        $resultHeaders = Curl::getLastResponseHeaders();
+        if ('chunked' === array_get(array_change_key_case($resultHeaders, CASE_LOWER), 'transfer-encoding')) {
+            // don't relay this header through to client as it isn't handled well in some cases
+            unset($resultHeaders['Transfer-Encoding']); // normal header case
+            unset($resultHeaders['transfer-encoding']); // Restlet has all lower for this header
+        }
+
+        return ResponseFactory::create($result, $contentType, $status, $resultHeaders);
     }
 
     /**

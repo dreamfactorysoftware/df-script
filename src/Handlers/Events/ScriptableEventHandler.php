@@ -10,13 +10,13 @@ use DreamFactory\Core\Events\ApiEvent;
 use DreamFactory\Core\Events\PostProcessApiEvent;
 use DreamFactory\Core\Events\PreProcessApiEvent;
 use DreamFactory\Core\Events\ServiceEvent;
-use DreamFactory\Core\Resources\System\Cache;
 use DreamFactory\Core\Script\Components\ScriptHandler;
 use DreamFactory\Core\Script\Events\BaseEventScriptEvent;
 use DreamFactory\Core\Script\Events\EventScriptDeletedEvent;
 use DreamFactory\Core\Script\Events\EventScriptModifiedEvent;
 use DreamFactory\Core\Script\Jobs\ServiceEventScriptJob;
 use DreamFactory\Core\Script\Models\EventScript;
+use DreamFactory\Core\System\Resources\Cache;
 use DreamFactory\Core\Utility\ResponseFactory;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Bus\DispatchesJobs;
@@ -83,8 +83,9 @@ class ScriptableEventHandler
                                 $content = array_get($response, 'content');
                                 $contentType = array_get($response, 'content_type');
                                 $status = array_get($response, 'status_code', HttpStatusCodeInterface::HTTP_OK);
+                                $headers = (array)array_get($response, 'headers');
 
-                                $event->response = ResponseFactory::create($content, $contentType, $status);
+                                $event->response = ResponseFactory::create($content, $contentType, $status, $headers);
                             } else {
                                 // otherwise assume raw content
                                 $event->response = ResponseFactory::create($response);

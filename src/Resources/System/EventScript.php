@@ -7,7 +7,7 @@ use DreamFactory\Core\Enums\ApiOptions;
 use DreamFactory\Core\Exceptions\BadRequestException;
 use DreamFactory\Core\Exceptions\BatchException;
 use DreamFactory\Core\Exceptions\InternalServerErrorException;
-use DreamFactory\Core\Resources\System\BaseSystemResource;
+use DreamFactory\Core\System\Resources\BaseSystemResource;
 use DreamFactory\Core\Script\Models\EventScript as EventScriptModel;
 use DreamFactory\Core\Utility\ResourcesWrapper;
 use DreamFactory\Core\Utility\ResponseFactory;

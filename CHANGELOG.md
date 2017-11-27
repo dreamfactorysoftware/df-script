@@ -3,8 +3,11 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- DF-1254 Allow setting response headers in all cases
 ### Changed
 - DF-1226 Remove deprecated v8js extension methods
+- Use new df-system repository
 
 ## [0.7.0] - 2017-11-03
 ### Changed

@@ -220,8 +220,9 @@ class Script extends BaseRestService
             $content = array_get($result, 'content');
             $contentType = array_get($result, 'content_type');
             $status = array_get($result, 'status_code', HttpStatusCodeInterface::HTTP_OK);
+            $headers = (array)array_get($result, 'headers');
 
-            return ResponseFactory::create($content, $contentType, $status);
+            return ResponseFactory::create($content, $contentType, $status, $headers);
         }
 
         // otherwise assume raw content
