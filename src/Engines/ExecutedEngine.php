@@ -92,6 +92,7 @@ abstract class ExecutedEngine extends BaseEngineAdapter
      * @param array  $engineArguments An array of arguments to pass when executing the string
      *
      * @return mixed
+     * @throws InternalServerErrorException
      */
     public function executeScript($path, $identifier, array &$data = [], array $engineArguments = [])
     {

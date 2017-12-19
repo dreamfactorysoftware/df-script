@@ -1,10 +1,11 @@
 <?php
 namespace DreamFactory\Core\Script\Components;
 
+use Cache;
+use Config;
 use DreamFactory\Core\Components\ExceptionResponse;
 use DreamFactory\Core\Script\Contracts\ScriptingEngineInterface;
 use DreamFactory\Core\Enums\DataFormats;
-use DreamFactory\Core\Enums\ServiceRequestorTypes;
 use DreamFactory\Core\Script\Exceptions\ScriptException;
 use DreamFactory\Core\Exceptions\RestException;
 use DreamFactory\Core\Exceptions\ServiceUnavailableException;
@@ -12,8 +13,6 @@ use DreamFactory\Core\Utility\ResponseFactory;
 use DreamFactory\Core\Utility\Session;
 use DreamFactory\Core\Utility\Curl;
 use DreamFactory\Core\Enums\Verbs;
-use Cache;
-use Config;
 use Illuminate\Support\Arr;
 use ServiceManager;
 
@@ -53,7 +52,6 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
     /**
      * @param array $settings
      *
-     * @throws ServiceUnavailableException
      */
     public function __construct(array $settings = [])
     {
@@ -65,6 +63,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
      * @param array $options
      *
      * @return void
+     * @throws ServiceUnavailableException
      */
     public static function startup($options = null)
     {
@@ -115,7 +114,6 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
      *
      * @return array
      * @throws ScriptException
-     * @throws ServiceUnavailableException
      */
     public function runScript(
         $script,
@@ -167,9 +165,6 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
      */
     public static function loadScript($name, $path = null, $returnContents = true)
     {
-        if ($path) {
-            // no longer support file paths for scripts?
-        }
         //  Already read, return script
         if (null !== ($script = array_get(static::$libraries, $name))) {
             return $returnContents ? file_get_contents($script) : $script;
@@ -178,13 +173,21 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
         $script = ltrim($script, ' /');
 
         //  Spin through paths and look for the script
-        foreach (static::$libraryPaths as $path) {
-            $check = $path . '/' . $script;
+        foreach (static::$libraryPaths as $libPath) {
+            $check = $libPath . '/' . $script;
 
             if (is_file($check) && is_readable($check)) {
                 array_set(static::$libraries, $name, $check);
 
                 return $returnContents ? file_get_contents($check) : $check;
+            }
+        }
+
+        if ($path) {
+            if (is_file($path) && is_readable($path)) {
+                array_set(static::$libraries, $name, $path);
+
+                return $returnContents ? file_get_contents($path) : $path;
             }
         }
 
@@ -194,7 +197,6 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
     /**
      * @param array $libraryPaths
      *
-     * @throws ServiceUnavailableException
      */
     protected static function initializeLibraryPaths($libraryPaths = null)
     {
@@ -384,6 +386,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
      * @param array  $curlOptions Additional CURL options for external requests
      *
      * @return array
+     * @throws \DreamFactory\Core\Exceptions\BadRequestException
      */
     public static function inlineRequest($method, $path, $payload = null, $curlOptions = [])
     {
@@ -440,14 +443,11 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
                     $format = DataFormats::TEXT;
                 }
 
-                Session::checkServicePermission($method, $serviceName, $resource, ServiceRequestorTypes::SCRIPT);
-
                 $request = new ScriptServiceRequest($method, $params, $headers);
                 $request->setContent($payload, $format);
 
                 //  Now set the request object and go...
-                $service = ServiceManager::getService($serviceName);
-                $result = $service->handleRequest($request, $resource);
+                $result = ServiceManager::handleServiceRequest($request, $serviceName, $resource);
             }
         } catch (\Exception $ex) {
             $result = static::exceptionToServiceResponse($ex);
