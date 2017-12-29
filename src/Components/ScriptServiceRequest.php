@@ -10,22 +10,14 @@ use DreamFactory\Core\Enums\ServiceRequestorTypes;
  * Class ScriptServiceRequest
  *
  */
-class ScriptServiceRequest implements ServiceRequestInterface
+class ScriptServiceRequest extends InternalServiceRequest implements ServiceRequestInterface
 {
-    use InternalServiceRequest;
+    protected $requestorType = ServiceRequestorTypes::SCRIPT;
 
     public function __construct($method = Verbs::GET, $parameters = [], $headers = [])
     {
         $this->setMethod($method);
         $this->setParameters($parameters);
         $this->setHeaders($headers);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getRequestorType()
-    {
-        return ServiceRequestorTypes::SCRIPT;
     }
 }

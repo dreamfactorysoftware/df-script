@@ -4,8 +4,8 @@ namespace DreamFactory\Core\Script\Jobs;
 
 use Crypt;
 use DreamFactory\Core\Events\ServiceEvent;
-use DreamFactory\Core\Resources\System\Cache;
 use DreamFactory\Core\Script\Models\EventScript;
+use DreamFactory\Core\System\Resources\Cache;
 use Log;
 use Session;
 

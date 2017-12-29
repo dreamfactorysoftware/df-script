@@ -3,6 +3,17 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+## [0.8.0] - 2017-12-28
+### Added
+- DF-1254 Allowed setting response headers in all cases
+- Added package discovery
+### Changed
+- DF-1226 Removed deprecated v8js extension methods
+- Used new df-system repository
+- DF-1150 Updated copyright and support email
+- Reworked service request types
+- Cleanup use of checkServicePermission
+
 ## [0.7.0] - 2017-11-03
 ### Changed
 - DF-1222 Removing write to database from script caching so that lookups are not processed prematurely
@@ -64,7 +75,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## 0.1.0 - 2016-11-30
 First official release working with the new [dreamfactory](https://github.com/dreamfactorysoftware/dreamfactory) project.
 
-[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.7.0...HEAD
+[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.8.0...HEAD
+[0.8.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.7.0...0.8.0
 [0.7.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.6.2...0.7.0
 [0.6.2]: https://github.com/dreamfactorysoftware/df-script/compare/0.6.1...0.6.2
 [0.6.1]: https://github.com/dreamfactorysoftware/df-script/compare/0.6.0...0.6.1

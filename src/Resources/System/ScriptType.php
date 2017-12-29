@@ -2,7 +2,7 @@
 
 namespace DreamFactory\Core\Script\Resources\System;
 
-use DreamFactory\Core\Resources\System\ReadOnlySystemResource;
+use DreamFactory\Core\System\Resources\ReadOnlySystemResource;
 use DreamFactory\Core\Script\Contracts\ScriptEngineTypeInterface;
 use DreamFactory\Core\Exceptions\NotFoundException;
 use DreamFactory\Core\Utility\ResourcesWrapper;

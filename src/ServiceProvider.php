@@ -3,8 +3,8 @@ namespace DreamFactory\Core\Script;
 
 use DreamFactory\Core\Enums\ServiceTypeGroups;
 use DreamFactory\Core\Models\SystemTableModelMapper;
-use DreamFactory\Core\Resources\System\SystemResourceManager;
-use DreamFactory\Core\Resources\System\SystemResourceType;
+use DreamFactory\Core\System\Components\SystemResourceManager;
+use DreamFactory\Core\System\Components\SystemResourceType;
 use DreamFactory\Core\Script\Components\ScriptEngineManager;
 use DreamFactory\Core\Script\Facades\ScriptEngineManager as ScriptEngineManagerFacade;
 use DreamFactory\Core\Script\Handlers\Events\ScriptableEventHandler;
