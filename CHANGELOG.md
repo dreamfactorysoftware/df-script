@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- DF-1293 Added implements_access_list config option for overriding swagger def for role service access
 ### Fixed
 - DF-1287 Fixed NodeJS (and Python) script execution for large script. Made script size configurable
 - DF-1293 Fixed role service access components when swagger def is supplied
