@@ -143,8 +143,6 @@ abstract class ExecutedEngine extends BaseEngineAdapter
             $filePath .= '.' . $this->fileExtension;
         }
 
-
-
         return $filePath;
     }
 
