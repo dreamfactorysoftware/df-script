@@ -162,9 +162,9 @@ class Script extends BaseRestService
         $paths = array_keys((array)array_get($this->getApiDoc(), 'paths'));
         foreach ($paths as $path) {
             // drop service from path
-            if (!empty($path = ltrim(strstr(ltrim($path, '/'), '/'), '/'))) {
+            if (!empty($path = ltrim($path, '/'))) {
                 $list[] = $path;
-                $path = explode("/", $path);
+                $path = explode('/', $path);
                 end($path);
                 while ($level = prev($path)) {
                     $list[] = $level . '/*';

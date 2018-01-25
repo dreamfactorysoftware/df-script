@@ -19,7 +19,7 @@ class UpdateScriptTablesForServiceLinking extends Migration
         // so set the default no action and clear out created/modified by another user when deleting a user.
         $onDelete = (('sqlsrv' === $driver) ? 'no action' : 'set null');
 
-        if(Schema::hasTable('script_config') && !Schema::hasColumn('script_config', 'storage_service_id')){
+        if (Schema::hasTable('script_config') && !Schema::hasColumn('script_config', 'storage_service_id')) {
             Schema::table('script_config', function (Blueprint $t) use ($onDelete) {
                 $t->string('scm_reference')->nullable()->after('config');
                 $t->string('scm_repository')->nullable()->after('config');
@@ -29,7 +29,7 @@ class UpdateScriptTablesForServiceLinking extends Migration
             });
         }
 
-        if(Schema::hasTable('event_script') && !Schema::hasColumn('event_script', 'storage_service_id')){
+        if (Schema::hasTable('event_script') && !Schema::hasColumn('event_script', 'storage_service_id')) {
             Schema::table('event_script', function (Blueprint $t) use ($onDelete) {
                 $t->string('scm_reference')->nullable()->after('config');
                 $t->string('scm_repository')->nullable()->after('config');
@@ -47,19 +47,21 @@ class UpdateScriptTablesForServiceLinking extends Migration
      */
     public function down()
     {
-        if(Schema::hasTable('script_config') && Schema::hasColumn('script_config', 'storage_service_id')) {
-            Schema::table('script_config', function (Blueprint $t){
+        if (Schema::hasTable('script_config') && Schema::hasColumn('script_config', 'storage_service_id')) {
+            Schema::table('script_config', function (Blueprint $t) {
                 $t->dropColumn('storage_service_id');
                 $t->dropColumn('storage_path');
                 $t->dropColumn('scm_reference');
+                $t->dropColumn('scm_repository');
             });
         }
 
-        if(Schema::hasTable('event_script') && Schema::hasColumn('event_script', 'storage_service_id')) {
-            Schema::table('event_script', function (Blueprint $t){
+        if (Schema::hasTable('event_script') && Schema::hasColumn('event_script', 'storage_service_id')) {
+            Schema::table('event_script', function (Blueprint $t) {
                 $t->dropColumn('storage_service_id');
                 $t->dropColumn('storage_path');
                 $t->dropColumn('scm_reference');
+                $t->dropColumn('scm_repository');
             });
         }
     }

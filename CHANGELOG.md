@@ -3,6 +3,13 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+## [0.8.1] - 2018-01-25
+### Added
+- DF-1293 Added implements_access_list config option for overriding swagger def for role service access
+### Fixed
+- DF-1287 Fixed NodeJS (and Python) script execution for large script, making script size limit check configurable
+- DF-1293 Fixed role service access components when swagger def is supplied
+
 ## [0.8.0] - 2017-12-28
 ### Added
 - DF-1254 Allowed setting response headers in all cases
@@ -75,7 +82,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ## 0.1.0 - 2016-11-30
 First official release working with the new [dreamfactory](https://github.com/dreamfactorysoftware/dreamfactory) project.
 
-[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.8.0...HEAD
+[Unreleased]: https://github.com/dreamfactorysoftware/df-script/compare/0.8.1...HEAD
+[0.8.1]: https://github.com/dreamfactorysoftware/df-script/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.7.0...0.8.0
 [0.7.0]: https://github.com/dreamfactorysoftware/df-script/compare/0.6.2...0.7.0
 [0.6.2]: https://github.com/dreamfactorysoftware/df-script/compare/0.6.1...0.6.2
