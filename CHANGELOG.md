@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Added
+- DF-1301 Response caching using URL path and parameters as key
+
 ## [0.8.1] - 2018-01-25
 ### Added
 - DF-1293 Added implements_access_list config option for overriding swagger def for role service access
