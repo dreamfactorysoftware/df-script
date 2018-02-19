@@ -315,7 +315,7 @@ class Script extends BaseRestService
             $result = ResponseFactory::create($result);
         }
 
-        if ($cacheKey) {
+        if ($cacheKey && ($result->getStatusCode() < 300)) {
             $this->addToCache($cacheKey, $result);
         }
 
