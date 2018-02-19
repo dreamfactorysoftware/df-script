@@ -2,6 +2,7 @@
 
 namespace DreamFactory\Core\Script\Services;
 
+use Config;
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
 use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Enums\ApiOptions;
@@ -12,6 +13,7 @@ use DreamFactory\Core\Script\Jobs\ScriptServiceJob;
 use DreamFactory\Core\Services\BaseRestService;
 use DreamFactory\Core\Utility\ResourcesWrapper;
 use DreamFactory\Core\Utility\ResponseFactory;
+use DreamFactory\Core\Utility\Session;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Log;
 
@@ -39,6 +41,10 @@ class Script extends BaseRestService
      * @var array $scriptConfig Configuration for the engine for this particular script
      */
     protected $scriptConfig;
+    /**
+     * @type bool
+     */
+    protected $cacheEnabled = false;
     /**
      * @var boolean $queued Configuration for the engine for this particular script
      */
@@ -76,6 +82,9 @@ class Script extends BaseRestService
         if (!is_array($this->scriptConfig = array_get($this->config, 'config', []))) {
             $this->scriptConfig = [];
         }
+
+        $this->cacheEnabled = array_get_bool($this->config, 'cache_enabled');
+        $this->cacheTTL = intval(array_get($this->config, 'cache_ttl', Config::get('df.default_cache_ttl')));
 
         $this->implementsAccessList = array_get_bool($this->config, 'implements_access_list');
     }
@@ -177,14 +186,79 @@ class Script extends BaseRestService
         return array_values(array_unique($list));
     }
 
+    protected function buildRequestCacheKey()
+    {
+        // build cache_key
+        $cacheKey = $this->action;
+        $resource = array_map('rawurlencode', $this->resourceArray);
+        if ($resource) {
+            $cacheKey .= ':' . implode('.', $resource);
+        }
+
+        $cacheQuery = '';
+        // Using raw query string here to allow for multiple parameters with the same key name.
+        // The laravel Request object or PHP global array $_GET doesn't allow that.
+        $requestQuery = explode('&', array_get($_SERVER, 'QUERY_STRING'));
+
+        // If request is coming from a scripted service then $_SERVER['QUERY_STRING'] will be blank.
+        // Therefore need to check the Request object for parameters.
+        foreach ($this->request->getParameters() as $pk => $pv) {
+            if (is_array($pv)) {
+                foreach ($pv as $ipk => $ipv) {
+                    $param = $pk . '[' . $ipk . ']=' . $ipv;
+                    if (!in_array($param, $requestQuery)) {
+                        $requestQuery[] = $param;
+                    }
+                }
+            } else {
+                $param = $pk . '=' . $pv;
+                if (!in_array($param, $requestQuery)) {
+                    $requestQuery[] = $param;
+                }
+            }
+        }
+
+        foreach ($requestQuery as $q) {
+            $pairs = explode('=', $q);
+            $name = trim(array_get($pairs, 0));
+            $value = trim(array_get($pairs, 1));
+            static::parseParameter($cacheQuery, $name, $value);
+        }
+
+        if (!empty($cacheQuery)) {
+            $cacheKey .= ':' . $cacheQuery;
+        }
+
+        return sha1($cacheKey); // the key may contain confidential info
+    }
+
+    protected static function parseParameter(&$key, $name, $value)
+    {
+        if ('_' !== $name) { // this value included with jQuery calls should not be considered
+            if (is_array($value)) {
+                foreach ($value as $sub => $subValue) {
+                    static::parseParameter($key, $name . '[' . $sub . ']', $subValue);
+                }
+            } else {
+                Session::replaceLookups($value, true);
+                $part = $name;
+                if (!empty($value)) {
+                    $part .= '=' . $value;
+                }
+                if (!empty($key)) {
+                    $key .= '&';
+                }
+                $key .= $part;
+            }
+        }
+    }
+
     /**
      * @return bool|mixed
-     * @throws
-     * @throws \DreamFactory\Core\Script\Exceptions\ScriptException
-     * @throws \DreamFactory\Core\Exceptions\BadRequestException
      * @throws \DreamFactory\Core\Exceptions\InternalServerErrorException
      * @throws \DreamFactory\Core\Exceptions\RestException
      * @throws \DreamFactory\Core\Exceptions\ServiceUnavailableException
+     * @throws \DreamFactory\Core\Script\Exceptions\ScriptException
      */
     protected function processRequest()
     {
@@ -208,6 +282,19 @@ class Script extends BaseRestService
 
         $data = $this->getRequestData();
 
+        $cacheKey = null;
+        if ($this->cacheEnabled) {
+            switch ($this->action) {
+                case Verbs::GET:
+                    // build cache_key
+                    $cacheKey = $this->buildRequestCacheKey();
+                    if (null !== $result = $this->getFromCache($cacheKey)) {
+                        return $result;
+                    }
+                    break;
+            }
+        }
+
         $logOutput = $this->request->getParameterAsBool('log_output', true);
         $result = $this->handleScript('service.' . $this->name, $this->getScriptContent(), $this->engineType,
             $this->scriptConfig, $data, $logOutput);
@@ -222,11 +309,17 @@ class Script extends BaseRestService
             $status = array_get($result, 'status_code', HttpStatusCodeInterface::HTTP_OK);
             $headers = (array)array_get($result, 'headers');
 
-            return ResponseFactory::create($content, $contentType, $status, $headers);
+            $result = ResponseFactory::create($content, $contentType, $status, $headers);
+        } else {
+            // otherwise assume raw content
+            $result = ResponseFactory::create($result);
         }
 
-        // otherwise assume raw content
-        return ResponseFactory::create($result);
+        if ($cacheKey) {
+            $this->addToCache($cacheKey, $result);
+        }
+
+        return $result;
     }
 
     protected function getEventName()
