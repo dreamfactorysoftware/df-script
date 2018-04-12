@@ -56,8 +56,21 @@ class Python extends ExecutedEngine
         $scriptLines = explode("\n", $script);
 
         $enrobedScript = <<<python
-import httplib, json;
-from bunch import bunchify, unbunchify;
+import json;
+
+try:
+  import http.client as httplib;
+except ImportError:
+  import httplib
+
+try:
+  from munch import munchify as bunchify, unmunchify as unbunchify;
+except ImportError:
+  from bunch import bunchify, unbunchify
+
+import sys
+
+sys.path.append('/home/bitnami/scripts')
 
 eventJson = $jsonEvent;
 platformJson = $jsonPlatform;
@@ -163,7 +176,6 @@ class Api:
                 return path;
 		
 _platform.api = Api(__host, __headers, __protocol);
-
 try:
     def my_closure(event, platform):
 python;
@@ -178,7 +190,7 @@ except Exception as e:
     _event.script_result = {'error':str(e)};
     _event.exception = str(e)
 
-print json.dumps(_event);
+print(json.dumps(_event));
 python;
         $enrobedScript = trim($enrobedScript);
 
