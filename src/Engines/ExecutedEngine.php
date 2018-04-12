@@ -8,12 +8,40 @@ use DreamFactory\Core\Exceptions\ServiceUnavailableException;
 use DreamFactory\Core\Script\Components\BaseEngineAdapter;
 use \Log;
 
+trait PhpStderrExecutable 
+{
+    use PhpExecutable;
+    /* this is a trait overriding the executed command to allow it to optionally pass back
+     * the stderr stream from the executed script. We later implement this in order
+     * to log the errors, for debugging purposes
+     */
+    public function execute($command, array &$output = null, array &$return = null, &$stderr = null)
+    {
+	$descriptors = array(
+		0 => array("pipe", "r"),
+		1 => array("pipe", "w"),
+		2 => array("pipe", "w")
+	);
+	$pipes = null;
+	$res = @proc_open($command, $descriptors, $pipes);
+	if (is_resource($res)) {
+		fclose($pipes[0]);
+		$output = stream_get_contents($pipes[1]);
+		$stderr = stream_get_contents($pipes[2]);
+		fclose($pipes[1]);
+		fclose($pipes[2]);
+	}
+	$return = @proc_close($res);
+	
+    }
+}
+
 /**
  * Abstract class for command executed engines, i.e. those outside of PHP control
  */
 abstract class ExecutedEngine extends BaseEngineAdapter
 {
-    use PhpExecutable;
+    use PhpStderrExecutable;
 
     protected $scriptFile = null;
 
@@ -62,8 +90,9 @@ abstract class ExecutedEngine extends BaseEngineAdapter
 
         $output = null;
         $return = null;
+	$stderr = null;
         try {
-            $this->execute($runnerShell, $output, $return);
+            $this->execute($runnerShell, $output, $return, $stderr);
         } catch (\Exception $ex) {
             $message = $ex->getMessage();
             Log::error("Exception executing command based script: $message");
@@ -73,6 +102,7 @@ abstract class ExecutedEngine extends BaseEngineAdapter
 
         if ($return > 0) {
             Log::debug("Executed script: $runnerShell");
+	    Log::error("Script gave error message: $this->commandPath\n$stderr");
             throw new InternalServerErrorException('Executed command returned with error code: ' . $return);
         }
 
@@ -147,11 +177,11 @@ abstract class ExecutedEngine extends BaseEngineAdapter
     }
 
     /**
-     * @param array $output
-     *
+     * @param $output
+     *      now allows string input 
      * @return null|array
      */
-    protected function processOutput(array $output = [])
+    protected function processOutput($output = [])
     {
         $data = null;
         if (is_array($output)) {
