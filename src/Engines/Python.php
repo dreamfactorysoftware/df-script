@@ -68,9 +68,6 @@ try:
 except ImportError:
   from bunch import bunchify, unbunchify
 
-import sys
-
-sys.path.append('/home/bitnami/scripts')
 
 eventJson = $jsonEvent;
 platformJson = $jsonPlatform;
