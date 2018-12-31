@@ -6,6 +6,7 @@ use DreamFactory\Core\Exceptions\ServiceUnavailableException;
 use DreamFactory\Core\Script\Engines\NodeJs;
 use DreamFactory\Core\Script\Engines\Php;
 use DreamFactory\Core\Script\Engines\Python;
+use DreamFactory\Core\Script\Engines\Python3;
 use DreamFactory\Core\Script\Engines\V8Js;
 use InvalidArgumentException;
 
@@ -93,6 +94,15 @@ class ScriptEngineManager
                 'sandboxed'   => false,
                 'factory'     => function ($config){
                     return new Python($config);
+                },
+            ],
+            [
+                'name'        => 'python3',
+                'label'       => 'Python3',
+                'description' => 'Script handler using native Python3.',
+                'sandboxed'   => false,
+                'factory'     => function ($config){
+                    return new Python3($config);
                 },
             ],
             [
