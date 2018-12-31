@@ -3,6 +3,8 @@ namespace DreamFactory\Core\Script;
 
 use DreamFactory\Core\Enums\ServiceTypeGroups;
 use DreamFactory\Core\Models\SystemTableModelMapper;
+use DreamFactory\Core\Script\Models\Python3Config;
+use DreamFactory\Core\Script\Services\Python3;
 use DreamFactory\Core\System\Components\SystemResourceManager;
 use DreamFactory\Core\System\Components\SystemResourceType;
 use DreamFactory\Core\Script\Components\ScriptEngineManager;
@@ -66,6 +68,19 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'config_handler'        => PythonConfig::class,
                         'factory'               => function ($config) {
                             return new Python($config);
+                        },
+                    ]));
+            $df->addType(
+                new ServiceType(
+                    [
+                        'name'            => 'python3',
+                        'label'           => 'Python3',
+                        'description'     => 'Service that allows client-callable scripts utilizing the system scripting.',
+                        'group'           => ServiceTypeGroups::SCRIPT,
+                        'subscription_required' => LicenseLevel::SILVER,
+                        'config_handler'  => Python3Config::class,
+                        'factory'         => function ($config) {
+                            return new Python3($config);
                         },
                     ]));
             $df->addType(
