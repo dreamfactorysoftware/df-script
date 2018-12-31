@@ -9,6 +9,7 @@
     "v8js",
     "php",
     "python",
+    "python3",
     "nodejs"
   ],
   "license":     [
