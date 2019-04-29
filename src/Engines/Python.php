@@ -34,10 +34,39 @@ class Python extends ExecutedEngine
 
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
+        
         $jsonEvent = $this->safeJsonEncode($data, false);
-        $jsonEvent = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonEvent);
+
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
-        $jsonPlatform = str_replace(['null', 'true', 'false'], ['None', 'True', 'False'], $jsonPlatform);
+
+        $jsonPlatform = str_replace(
+            [
+                ":null,", ":null",
+                ":false,", ":false",
+                ":true,", ":true"
+            ],
+            [
+                ":None,", ":None",
+                ":False,", ":False",
+                ":True,", ":True"
+            ],
+            $jsonPlatform
+        );
+
+        $jsonEvent = str_replace(
+            [
+                ":null,", ":null",
+                ":false,", ":false",
+                ":true,", ":true"
+            ],
+            [
+            ":None,", ":None",
+            ":False,", ":False",
+            ":True,", ":True"
+            ],
+            $jsonEvent
+        );
+        
         $protocol = config('df.scripting.default_protocol', 'http');
         $https = array_get($_SERVER, 'HTTPS');
         if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
