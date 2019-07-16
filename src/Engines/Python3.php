@@ -4,7 +4,7 @@ namespace DreamFactory\Core\Script\Engines;
 
 use Cache;
 
-class Python extends ExecutedEngine
+class Python3 extends ExecutedEngine
 {
     //*************************************************************************
     //	Methods
@@ -16,10 +16,10 @@ class Python extends ExecutedEngine
     public function __construct(array $settings = [])
     {
         if (!isset($settings['command_name'])) {
-            $settings['command_name'] = 'python';
+            $settings['command_name'] = 'python3';
         }
         if (!isset($settings['command_path'])) {
-            $settings['command_path'] = config('df.scripting.python_path');
+            $settings['command_path'] = config('df.scripting.python3_path');
         }
         if (!isset($settings['file_extension'])) {
             $settings['file_extension'] = 'py';
@@ -34,6 +34,7 @@ class Python extends ExecutedEngine
 
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
+
         $jsonEvent = $this->safeJsonEncode($data, false);
 
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
@@ -65,7 +66,7 @@ class Python extends ExecutedEngine
             ],
             $jsonEvent
         );
-
+        
         $protocol = config('df.scripting.default_protocol', 'http');
         $https = array_get($_SERVER, 'HTTPS');
         if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
@@ -83,15 +84,18 @@ class Python extends ExecutedEngine
         }
         $scriptLines = explode("\n", $script);
 
+        echo $jsonEvent;
         $enrobedScript = <<<python
-import httplib, json;
-from bunch import bunchify, unbunchify;
+import http.client, json;
+from munch import munchify, unmunchify;
 
 eventJson = $jsonEvent;
+print(eventJson);
 platformJson = $jsonPlatform;
+print(platformJson);
 
-_event = bunchify(eventJson);
-_platform = bunchify(platformJson);
+_event = munchify(eventJson);
+_platform = munchify(platformJson);
 
 
 __protocol = '$protocol';
@@ -123,15 +127,15 @@ class Api:
 
         def call(self, verb, path, payload='', options={}):
                 if(type(options) is dict):
-                        options = bunchify(options);
+                        options = munchify(options);
                 if(options and ('headers' in options)):
                         header = options.headers;
                 elif(options and ('parameters' in options)):
-                        header = bunchify({});
+                        header = munchify({});
                 elif(options):
                         header = options;
                 else:
-                        header = bunchify({});
+                        header = munchify({});
 
                 path = self.cleanPath(path);
                 if(options and ('parameters' in options)):
@@ -153,9 +157,9 @@ class Api:
         def getConnection(self, path):
                 host = self.getHost(path);
                 if(self.getProtocol(path) == 'https'):
-                        return httplib.HTTPSConnection(host);
+                        return http.client.HTTPSConnection(host);
                 else:
-                        return httplib.HTTPConnection(host);
+                        return http.client.HTTPConnection(host);
 
         def getHost(self, path):
                 path = path.strip();
@@ -206,7 +210,7 @@ except Exception as e:
     _event.script_result = {'error':str(e)};
     _event.exception = str(e)
 
-print json.dumps(_event);
+print(json.dumps(_event));
 python;
         $enrobedScript = trim($enrobedScript);
 

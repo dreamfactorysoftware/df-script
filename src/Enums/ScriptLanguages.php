@@ -34,6 +34,10 @@ class ScriptLanguages extends FactoryEnum
     /**
      * @var string
      */
+    const PYTHON3 = 'py';
+    /**
+     * @var string
+     */
     const PHP = 'php';
     /**
      * @var string
