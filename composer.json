@@ -13,16 +13,12 @@
     "nodejs"
   ],
   "license":     [
-    "Apache-2.0"
+    "Proprietary"
   ],
   "authors":     [
     {
-      "name":  "Arif Islam",
-      "email": "arifislam@dreamfactory.com"
-    },
-    {
-      "name":  "Lee Hicks",
-      "email": "leehicks@dreamfactory.com"
+      "name":  "DreamFactory Team",
+      "email": "code@dreamfactory.com"
     }
   ],
   "support":     {
@@ -33,7 +29,7 @@
   },
   "require":     {
     "dreamfactory/df-core":   "~0.15.1",
-    "dreamfactory/df-system": "~0.2.0"
+    "dreamfactory/df-system": "~0.2.1"
   },
   "autoload":    {
     "psr-4": {
