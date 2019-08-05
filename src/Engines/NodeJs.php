@@ -67,6 +67,8 @@ class NodeJs extends ExecutedEngine
             $protocol = "https";
         }
         $token = uniqid();
+        $apiKey = array_get($platform, 'session.api_key');
+        $sessionToken = array_get($platform, 'session.session_token');
         $tokenCache = [
             'app_id'  => array_get($platform, 'session.app.id'),
             'user_id' => array_get($platform, 'session.user.id')
@@ -87,6 +89,10 @@ _wrapperResult = (function() {
     var _protocol = '{$protocol}';
     //noinspection JSUnresolvedVariable
     var _token = '{$token}';
+    //noinspection JSUnresolvedVariable
+    var _sessionToken = '{$sessionToken}';
+    //noinspection JSUnresolvedVariable
+    var _apiKey = '{$apiKey}';
     //noinspection JSUnresolvedVariable
     var _host = _event.request.headers.host;
     //request options
@@ -194,6 +200,8 @@ _wrapperResult = (function() {
             _options.headers = headers;
             if (isInternalApi(path)){
                 _options.headers['x-dreamfactory-script-token'] = _token;
+                _options.headers['x-dreamFactory-session-token'] = _sessionToken;
+                _options.headers['x-dreamfactory-api-key'] = _apiKey;
             }
             
             if (typeof payload === 'object'){
