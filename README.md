@@ -26,4 +26,4 @@ Edit your project’s composer.json to require the following package.
 
 ### License
 
-The DreamFactory scripting script repository is open-sourced software available for use under the [Apache Version 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
+This code is governed by a commercial license. To use it, you must follow refer to the LICENSE file.
