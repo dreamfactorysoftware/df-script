@@ -77,7 +77,7 @@ class Python3 extends ExecutedEngine
             'app_id'  => array_get($platform, 'session.app.id'),
             'user_id' => array_get($platform, 'session.user.id')
         ];
-        Cache::add('script-token:'.$token, $tokenCache, 5); // script should not take longer than 5 minutes to run
+        Cache::add('script-token:'.$token, $tokenCache, 300); // script should not take longer than 5 minutes to run
 
         if (empty($script)) {
             $script = 'pass;';
