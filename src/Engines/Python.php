@@ -72,6 +72,8 @@ class Python extends ExecutedEngine
             $protocol = 'https';
         }
         $token = uniqid();
+        $apiKey = array_get($platform, 'session.api_key');
+        $sessionToken = array_get($platform, 'session.session_token');
         $tokenCache = [
             'app_id'  => array_get($platform, 'session.app.id'),
             'user_id' => array_get($platform, 'session.user.id')
@@ -97,7 +99,9 @@ _platform = bunchify(platformJson);
 __protocol = '$protocol';
 __host = _event.request.headers.host;
 __headers = {
-    'x-dreamfactory-script-token':'$token'
+    'x-dreamfactory-script-token':'$token',
+    'x-dreamFactory-session-token':'$sessionToken',
+    'x-dreamfactory-api-key':'$apiKey',
     };
 
 class Api:
