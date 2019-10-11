@@ -103,6 +103,8 @@ class Script extends BaseRestService
     public function getScriptContent()
     {
         $cacheKey = 'script_content';
+        \Log::debug('SCRIPT CONFIG FROM CACHE:' . $this->getFromCache($cacheKey, ''));
+        \Log::debug('SCRIPT CONFIG:', $this->config);
 
         if (empty($content = $this->getFromCache($cacheKey, ''))) {
             $storageServiceId = array_get($this->config, 'storage_service_id');
@@ -125,6 +127,8 @@ class Script extends BaseRestService
                             ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
                         );
                         $content = $result->getContent();
+                        \Log::debug('SCRIPT CONTENT RESPONSE:', $result->toArray());
+
                     } else {
                         $result = \ServiceManager::handleRequest(
                             $serviceName,
@@ -296,6 +300,7 @@ class Script extends BaseRestService
         }
 
         $logOutput = $this->request->getParameterAsBool('log_output', true);
+        \Log::debug('SCRIPT CONTENT:' . $this->getScriptContent());
         $result = $this->handleScript('service.' . $this->name, $this->getScriptContent(), $this->engineType,
             $this->scriptConfig, $data, $logOutput);
 
