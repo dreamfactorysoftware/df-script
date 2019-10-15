@@ -124,7 +124,7 @@ class Script extends BaseRestService
                             '_repo/' . $scmRepo,
                             ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
                         );
-                        $content = $result->getContent();
+                        $content = is_array($result->getContent()) ? implode($result->getContent()) : $result->getContent();
                     } else {
                         $result = \ServiceManager::handleRequest(
                             $serviceName,
