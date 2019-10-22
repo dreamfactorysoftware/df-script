@@ -4,6 +4,8 @@ namespace DreamFactory\Core\Script\Services;
 
 use Config;
 use DreamFactory\Core\Contracts\HttpStatusCodeInterface;
+use DreamFactory\Core\Exceptions\RestException;
+use DreamFactory\Core\Exceptions\InternalServerErrorException;
 use DreamFactory\Core\Contracts\ServiceResponseInterface;
 use DreamFactory\Core\Enums\ApiOptions;
 use DreamFactory\Core\Enums\ServiceTypeGroups;
@@ -99,6 +101,7 @@ class Script extends BaseRestService
 
     /**
      * @return bool|mixed|string
+     * @throws InternalServerErrorException
      */
     public function getScriptContent()
     {
@@ -125,6 +128,9 @@ class Script extends BaseRestService
                             ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
                         );
                         $content = $result->getContent();
+                        if (isset($content['error'])) {
+                            throw new RestException($content['error']['code'], $content['error']['message']);
+                        }
                     } else {
                         $result = \ServiceManager::handleRequest(
                             $serviceName,
@@ -136,7 +142,7 @@ class Script extends BaseRestService
                     }
                 } catch (\Exception $e) {
                     \Log::error('Failed to fetch remote script. ' . $e->getMessage());
-                    $content = '';
+                    throw new InternalServerErrorException($e->getMessage(), $e->getCode());
                 }
             }
 
