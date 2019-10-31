@@ -125,7 +125,8 @@ class Script extends BaseRestService
                             $serviceName,
                             Verbs::GET,
                             '_repo/' . $scmRepo,
-                            ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
+                            ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1],
+                            [],null,null,true,true
                         );
                         $content = $result->getContent();
                         if (isset($content['error'])) {
@@ -136,7 +137,8 @@ class Script extends BaseRestService
                             $serviceName,
                             Verbs::GET,
                             $storagePath,
-                            ['include_properties' => 1, 'content' => 1]
+                            ['include_properties' => 1, 'content' => 1],
+                            [],null,null,true,true
                         );
                         $content = base64_decode(array_get($result->getContent(), 'content'));
                     }
