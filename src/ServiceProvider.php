@@ -16,11 +16,9 @@ use DreamFactory\Core\Script\Resources\System\ScriptType;
 use DreamFactory\Core\Script\Models\NodejsConfig;
 use DreamFactory\Core\Script\Models\PhpConfig;
 use DreamFactory\Core\Script\Models\PythonConfig;
-use DreamFactory\Core\Script\Models\V8jsConfig;
 use DreamFactory\Core\Script\Services\Nodejs;
 use DreamFactory\Core\Script\Services\Php;
 use DreamFactory\Core\Script\Services\Python;
-use DreamFactory\Core\Script\Services\V8js;
 use DreamFactory\Core\Services\ServiceManager;
 use DreamFactory\Core\Services\ServiceType;
 use Event;
@@ -84,19 +82,7 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                             return new Python3($config);
                         },
                     ]));
-            $df->addType(
-                new ServiceType(
-                    [
-                        'name'                  => 'v8js',
-                        'label'                 => 'V8js',
-                        'description'           => 'Service that allows client-callable scripts utilizing the system scripting.',
-                        'group'                 => ServiceTypeGroups::SCRIPT,
-                        'subscription_required' => LicenseLevel::SILVER,
-                        'config_handler'        => V8jsConfig::class,
-                        'factory'               => function ($config) {
-                            return new V8js($config);
-                        },
-                    ]));
+
         });
 
         // Add our service types.

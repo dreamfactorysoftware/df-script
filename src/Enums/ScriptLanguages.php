@@ -13,12 +13,8 @@ class ScriptLanguages extends FactoryEnum
     //* Constants
     //*************************************************************************
 
-    const __default = self::V8JS;
+    const __default = self::PHP;
 
-    /**
-     * @var string
-     */
-    const V8JS = 'v8js';
     /**
      * @var string
      */

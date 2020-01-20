@@ -2,7 +2,7 @@
 namespace DreamFactory\Core\Script\Components;
 
 /**
- * V8Js scripting session object
+ * Scripting session object
  */
 class ScriptSession
 {

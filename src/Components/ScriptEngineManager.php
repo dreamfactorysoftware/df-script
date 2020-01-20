@@ -7,7 +7,6 @@ use DreamFactory\Core\Script\Engines\NodeJs;
 use DreamFactory\Core\Script\Engines\Php;
 use DreamFactory\Core\Script\Engines\Python;
 use DreamFactory\Core\Script\Engines\Python3;
-use DreamFactory\Core\Script\Engines\V8Js;
 use InvalidArgumentException;
 
 /**
@@ -103,15 +102,6 @@ class ScriptEngineManager
                 'sandboxed'   => false,
                 'factory'     => function ($config){
                     return new Python3($config);
-                },
-            ],
-            [
-                'name'        => 'v8js',
-                'label'       => 'V8js',
-                'description' => 'Server-side JavaScript handler using the V8js engine.',
-                'sandboxed'   => true,
-                'factory'     => function ($config){
-                    return new V8Js($config);
                 },
             ]
         ];

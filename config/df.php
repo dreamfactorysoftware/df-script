@@ -2,7 +2,7 @@
 
 return [
     'scripting' => [
-        // 'all' to disable all scripting, or comma-delimited list of v8js, nodejs, python, and/or php
+        // 'all' to disable all scripting, or comma-delimited list of nodejs, python, and/or php
         'disable'     => env('DF_SCRIPTING_DISABLE'),
         // path to the installed nodejs executable
         'nodejs_path' => env('DF_NODEJS_PATH'),
