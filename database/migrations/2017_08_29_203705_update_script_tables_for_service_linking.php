@@ -49,19 +49,29 @@ class UpdateScriptTablesForServiceLinking extends Migration
     {
         if (Schema::hasTable('script_config') && Schema::hasColumn('script_config', 'storage_service_id')) {
             Schema::table('script_config', function (Blueprint $t) {
-                $t->dropColumn('storage_service_id');
-                $t->dropColumn('storage_path');
-                $t->dropColumn('scm_reference');
-                $t->dropColumn('scm_repository');
+                if (DB::getDriverName() !== 'sqlite') {
+                    $t->dropForeign('script_config_storage_service_id_foreign');
+                }
+                $t->dropColumn([
+                    'storage_service_id',
+                    'storage_path',
+                    'scm_reference',
+                    'scm_repository'
+                ]);
             });
         }
 
         if (Schema::hasTable('event_script') && Schema::hasColumn('event_script', 'storage_service_id')) {
             Schema::table('event_script', function (Blueprint $t) {
-                $t->dropColumn('storage_service_id');
-                $t->dropColumn('storage_path');
-                $t->dropColumn('scm_reference');
-                $t->dropColumn('scm_repository');
+                if (DB::getDriverName() !== 'sqlite') {
+                    $t->dropForeign('event_script_storage_service_id_foreign');
+                }
+                $t->dropColumn([
+                    'storage_service_id',
+                    'storage_path',
+                    'scm_reference',
+                    'scm_repository'
+                ]);
             });
         }
     }
