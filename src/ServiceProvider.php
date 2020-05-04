@@ -37,7 +37,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'label'                 => 'Node.js',
                         'description'           => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'                 => ServiceTypeGroups::SCRIPT,
-                        'subscription_required' => LicenseLevel::SILVER,
                         'config_handler'        => NodejsConfig::class,
                         'factory'               => function ($config) {
                             return new Nodejs($config);
@@ -50,7 +49,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'label'                 => 'PHP',
                         'description'           => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'                 => ServiceTypeGroups::SCRIPT,
-                        'subscription_required' => LicenseLevel::SILVER,
                         'config_handler'        => PhpConfig::class,
                         'factory'               => function ($config) {
                             return new Php($config);
@@ -63,7 +61,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'label'                 => 'Python',
                         'description'           => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'                 => ServiceTypeGroups::SCRIPT,
-                        'subscription_required' => LicenseLevel::SILVER,
                         'config_handler'        => PythonConfig::class,
                         'factory'               => function ($config) {
                             return new Python($config);
@@ -76,7 +73,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                         'label'                 => 'Python3',
                         'description'           => 'Service that allows client-callable scripts utilizing the system scripting.',
                         'group'                 => ServiceTypeGroups::SCRIPT,
-                        'subscription_required' => LicenseLevel::SILVER,
                         'config_handler'        => Python3Config::class,
                         'factory'               => function ($config) {
                             return new Python3($config);
@@ -93,7 +89,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                     'label'                 => 'Script Types',
                     'description'           => 'Read-only system scripting types.',
                     'class_name'            => ScriptType::class,
-                    'subscription_required' => LicenseLevel::SILVER,
                     'read_only'             => true,
                 ])
             );
@@ -103,7 +98,6 @@ class ServiceProvider extends \Illuminate\Support\ServiceProvider
                     'label'                 => 'Event Scripts',
                     'description'           => 'Allows registering server-side scripts to system generated events.',
                     'class_name'            => EventScript::class,
-                    'subscription_required' => LicenseLevel::SILVER,
                 ])
             );
         });
