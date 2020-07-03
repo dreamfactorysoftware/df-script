@@ -80,7 +80,7 @@ class NodeJs extends ExecutedEngine
 
         $enrobedScript = <<<JS
 
-_wrapperResult = (function() {
+(async function() {
     //noinspection JSUnresolvedVariable
     var _event = {$jsonEvent};
     //noinspection JSUnresolvedVariable
@@ -264,7 +264,7 @@ _wrapperResult = (function() {
  
     try	{
         //noinspection JSUnresolvedVariable
-        _event.script_result = (function(event, platform) {
+        _event.script_result = await (async function(event, platform) {
 
             //noinspection BadExpressionStatementJS,JSUnresolvedVariable
             {$script};
@@ -277,9 +277,9 @@ _wrapperResult = (function() {
 
 	return _event;
 
-})();
-
-console.log(JSON.stringify(_wrapperResult));
+})().then(_wrapperResult => {
+    console.log(JSON.stringify(_wrapperResult));    
+});
 JS;
 
         return $enrobedScript;
