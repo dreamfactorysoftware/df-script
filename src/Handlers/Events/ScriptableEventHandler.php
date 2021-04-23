@@ -160,7 +160,7 @@ class ScriptableEventHandler
         try {
             /** @var EventScript $model */
             $model = \Cache::rememberForever($cacheKey, function () use ($name) {
-                if ($model = EventScript::whereName($name)->whereIsActive(true)->first()) {
+                if ($model = EventScript::where(\DB::raw('lower((name)'), '=', strtolower($name))->whereIsActive(true)->first()) {
                     if (!empty($model->storage_service_id) && !empty($model->storage_path)) {
                         try {
                             $serviceId = $model->storage_service_id;
