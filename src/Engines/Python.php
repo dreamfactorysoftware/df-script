@@ -3,6 +3,7 @@
 namespace DreamFactory\Core\Script\Engines;
 
 use Cache;
+use Illuminate\Support\Arr;
 
 class Python extends ExecutedEngine
 {
@@ -67,16 +68,16 @@ class Python extends ExecutedEngine
         );
 
         $protocol = config('df.scripting.default_protocol', 'http');
-        $https = array_get($_SERVER, 'HTTPS');
-        if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
+        $https = Arr::get($_SERVER, 'HTTPS');
+        if ((!empty($https) && ('off' != $https)) || (443 == Arr::get($_SERVER, 'SERVER_PORT'))) {
             $protocol = 'https';
         }
         $token = uniqid();
-        $apiKey = array_get($platform, 'session.api_key');
-        $sessionToken = array_get($platform, 'session.session_token');
+        $apiKey = Arr::get($platform, 'session.api_key');
+        $sessionToken = Arr::get($platform, 'session.session_token');
         $tokenCache = [
-            'app_id'  => array_get($platform, 'session.app.id'),
-            'user_id' => array_get($platform, 'session.user.id')
+            'app_id'  => Arr::get($platform, 'session.app.id'),
+            'user_id' => Arr::get($platform, 'session.user.id')
         ];
         Cache::add('script-token:'.$token, $tokenCache, 300); // script should not take longer than 300 seconds to run
 

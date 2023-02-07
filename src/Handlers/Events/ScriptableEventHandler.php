@@ -21,6 +21,7 @@ use DreamFactory\Core\Utility\ResponseFactory;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Log;
+use Illuminate\Support\Arr;
 
 class ScriptableEventHandler
 {
@@ -75,15 +76,15 @@ class ScriptableEventHandler
                 if ($script->allow_event_modification) {
                     if ($event instanceof PreProcessApiEvent) {
                         // request only
-                        $event->request->mergeFromArray((array)array_get($result, 'request'));
+                        $event->request->mergeFromArray((array)Arr::get($result, 'request'));
 
                         // new feature to allow pre-process to circumvent process by returning response
-                        if (!empty($response = array_get($result, 'response'))) {
+                        if (!empty($response = Arr::get($result, 'response'))) {
                             if (is_array($response) && array_key_exists('content', $response)) {
-                                $content = array_get($response, 'content');
-                                $contentType = array_get($response, 'content_type');
-                                $status = array_get($response, 'status_code', HttpStatusCodeInterface::HTTP_OK);
-                                $headers = (array)array_get($response, 'headers');
+                                $content = Arr::get($response, 'content');
+                                $contentType = Arr::get($response, 'content_type');
+                                $status = Arr::get($response, 'status_code', HttpStatusCodeInterface::HTTP_OK);
+                                $headers = (array)Arr::get($response, 'headers');
 
                                 $event->response = ResponseFactory::create($content, $contentType, $status, $headers);
                             } else {
@@ -92,7 +93,7 @@ class ScriptableEventHandler
                             }
                         }
                     } elseif ($event instanceof PostProcessApiEvent) {
-                        if (empty($response = array_get($result, 'response', []))) {
+                        if (empty($response = Arr::get($result, 'response', []))) {
                             // check for "return" results
                             // could be formatted array or raw content
                             if (is_array($result) && (isset($result['content']) || isset($result['status_code']))) {
@@ -190,7 +191,7 @@ class ScriptableEventHandler
                                     ['include_properties' => 1, 'content' => 1]
                                 );
 
-                                $model->content = base64_decode(array_get($result->getContent(), 'content'));
+                                $model->content = base64_decode(Arr::get($result->getContent(), 'content'));
                             }
                         } catch (\Exception $e) {
                             \Log::error('Failed to fetch remote script. ' . $e->getMessage());
@@ -256,7 +257,7 @@ class ScriptableEventHandler
         $script,
         $result
     ) {
-        if (array_get($result, 'stop_propagation', false)) {
+        if (Arr::get($result, 'stop_propagation', false)) {
             Log::info('  * Propagation stopped by script.');
 
             return false;

@@ -67,7 +67,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
      */
     public static function startup($options = null)
     {
-        static::initializeLibraryPaths(array_get($options, 'library_paths', []));
+        static::initializeLibraryPaths(Arr::get($options, 'library_paths', []));
     }
 
     /**
@@ -128,7 +128,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
             //  Don't show output
             ob_start();
 
-            if (strpos($script, "\n") === false && is_file($script)) {
+            if (!str_contains($script, "\n") && is_file($script)) {
                 $result = $this->executeScript($script, $identifier, $data, $config);
             } else {
                 $result = $this->executeString($script, $identifier, $data, $config);
@@ -166,7 +166,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
     public static function loadScript($name, $path = null, $returnContents = true)
     {
         //  Already read, return script
-        if (null !== ($script = array_get(static::$libraries, $name))) {
+        if (null !== ($script = Arr::get(static::$libraries, $name))) {
             return $returnContents ? file_get_contents($script) : $script;
         }
 
@@ -177,7 +177,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
             $check = $libPath . '/' . $script;
 
             if (is_file($check) && is_readable($check)) {
-                array_set(static::$libraries, $name, $check);
+                Arr::set(static::$libraries, $name, $check);
 
                 return $returnContents ? file_get_contents($check) : $check;
             }
@@ -185,7 +185,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
 
         if ($path) {
             if (is_file($path) && is_readable($path)) {
-                array_set(static::$libraries, $name, $path);
+                Arr::set(static::$libraries, $name, $path);
 
                 return $returnContents ? file_get_contents($path) : $path;
             }
@@ -313,7 +313,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
      */
     protected static function externalRequest($method, $url, $payload = [], $curlOptions = [])
     {
-        if (!empty($parameters = (array)array_get($curlOptions, 'parameters'))) {
+        if (!empty($parameters = (array)Arr::get($curlOptions, 'parameters'))) {
             unset($curlOptions['parameters']);
             $paramStr = '';
             foreach ($parameters as $key => $value) {
@@ -325,7 +325,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
             $url .= (strpos($url, '?') ? '&' : '?') . $paramStr;
         }
 
-        if (!empty($headers = (array)array_get($curlOptions, 'headers'))) {
+        if (!empty($headers = (array)Arr::get($curlOptions, 'headers'))) {
             unset($curlOptions['headers']);
             $curlHeaders = [];
             if (!Arr::isAssoc($headers)) {
@@ -336,7 +336,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
                 }
             }
 
-            $existing = (array)array_get($curlOptions, CURLOPT_HTTPHEADER);
+            $existing = (array)Arr::get($curlOptions, CURLOPT_HTTPHEADER);
             if (array_key_exists('CURLOPT_HTTPHEADER', $curlOptions)) {
                 $existing = array_merge($existing, (array)$curlOptions['CURLOPT_HTTPHEADER']);
                 unset($curlOptions['CURLOPT_HTTPHEADER']);
@@ -354,7 +354,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
                     }
                 }
             }
-            $curlOptions = array_except($curlOptions, $badKeys);
+            $curlOptions = Arr::except($curlOptions, $badKeys);
         }
 
         Curl::setDecodeToArray(true);
@@ -370,7 +370,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
         }
 
         $resultHeaders = Curl::getLastResponseHeaders();
-        if ('chunked' === array_get(array_change_key_case($resultHeaders, CASE_LOWER), 'transfer-encoding')) {
+        if ('chunked' === Arr::get(array_change_key_case($resultHeaders, CASE_LOWER), 'transfer-encoding')) {
             // don't relay this header through to client as it isn't handled well in some cases
             unset($resultHeaders['Transfer-Encoding']); // normal header case
             unset($resultHeaders['transfer-encoding']); // Restlet has all lower for this header
@@ -399,8 +399,8 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
                 $result = static::externalRequest($method, $path, $payload, $curlOptions);
             } else {
                 $result = null;
-                $params = (array)array_get($curlOptions, 'parameters');
-                $headers = (array)array_get($curlOptions, 'headers');
+                $params = (array)Arr::get($curlOptions, 'parameters');
+                $headers = (array)Arr::get($curlOptions, 'headers');
                 if (false !== $pos = strpos($path, '?')) {
                     $paramString = substr($path, $pos + 1);
                     if (!empty($paramString)) {
@@ -408,8 +408,8 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
                         foreach ($pArray as $k => $p) {
                             if (!empty($p)) {
                                 $tmp = explode('=', $p);
-                                $name = array_get($tmp, 0, $k);
-                                $value = array_get($tmp, 1);
+                                $name = Arr::get($tmp, 0, $k);
+                                $value = Arr::get($tmp, 1);
                                 $params[$name] = urldecode($value);
                             }
                         }

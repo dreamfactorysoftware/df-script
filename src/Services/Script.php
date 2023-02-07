@@ -16,6 +16,7 @@ use DreamFactory\Core\Utility\ResponseFactory;
 use DreamFactory\Core\Utility\Session;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Log;
+use Illuminate\Support\Arr;
 
 /**
  * Script
@@ -69,22 +70,22 @@ class Script extends BaseRestService
     public function __construct($settings = [])
     {
         // parent handles the lookup replacement, don't want that yet for script content
-        $this->content = array_get($settings, 'config.content');
+        $this->content = Arr::get($settings, 'config.content');
 
         parent::__construct($settings);
 
         $this->queued = array_get_bool($this->config, 'queued');
 
-        if (empty($this->engineType = array_get($this->config, 'type'))) {
+        if (empty($this->engineType = Arr::get($this->config, 'type'))) {
             throw new \InvalidArgumentException('Script engine configuration can not be empty.');
         }
 
-        if (!is_array($this->scriptConfig = array_get($this->config, 'config', []))) {
+        if (!is_array($this->scriptConfig = Arr::get($this->config, 'config', []))) {
             $this->scriptConfig = [];
         }
 
         $this->cacheEnabled = array_get_bool($this->config, 'cache_enabled');
-        $this->cacheTTL = intval(array_get($this->config, 'cache_ttl', Config::get('df.default_cache_ttl')));
+        $this->cacheTTL = intval(Arr::get($this->config, 'cache_ttl', Config::get('df.default_cache_ttl')));
 
         $this->implementsAccessList = array_get_bool($this->config, 'implements_access_list');
     }
@@ -105,10 +106,10 @@ class Script extends BaseRestService
         $cacheKey = 'script_content';
 
         if (empty($content = $this->getFromCache($cacheKey, ''))) {
-            $storageServiceId = array_get($this->config, 'storage_service_id');
-            $storagePath = trim(array_get($this->config, 'storage_path'), '/');
-            $scmRepo = array_get($this->config, 'scm_repository');
-            $scmRef = array_get($this->config, 'scm_reference');
+            $storageServiceId = Arr::get($this->config, 'storage_service_id');
+            $storagePath = trim(Arr::get($this->config, 'storage_path'), '/');
+            $scmRepo = Arr::get($this->config, 'scm_repository');
+            $scmRef = Arr::get($this->config, 'scm_reference');
 
             $content = strval($this->content);
             if (!empty($storageServiceId) && !empty($storagePath)) {
@@ -132,7 +133,7 @@ class Script extends BaseRestService
                             $storagePath,
                             ['include_properties' => 1, 'content' => 1]
                         );
-                        $content = base64_decode(array_get($result->getContent(), 'content'));
+                        $content = base64_decode(Arr::get($result->getContent(), 'content'));
                     }
                 } catch (\Exception $e) {
                     \Log::error('Failed to fetch remote script. ' . $e->getMessage());
@@ -168,7 +169,7 @@ class Script extends BaseRestService
     {
         $list = parent::getAccessList();
 
-        $paths = array_keys((array)array_get($this->getApiDoc(), 'paths'));
+        $paths = array_keys((array)Arr::get($this->getApiDoc(), 'paths'));
         foreach ($paths as $path) {
             // drop service from path
             if (!empty($path = ltrim($path, '/'))) {
@@ -198,7 +199,7 @@ class Script extends BaseRestService
         $cacheQuery = '';
         // Using raw query string here to allow for multiple parameters with the same key name.
         // The laravel Request object or PHP global array $_GET doesn't allow that.
-        $requestQuery = explode('&', array_get($_SERVER, 'QUERY_STRING'));
+        $requestQuery = explode('&', Arr::get($_SERVER, 'QUERY_STRING'));
 
         // If request is coming from a scripted service then $_SERVER['QUERY_STRING'] will be blank.
         // Therefore need to check the Request object for parameters.
@@ -220,8 +221,8 @@ class Script extends BaseRestService
 
         foreach ($requestQuery as $q) {
             $pairs = explode('=', $q);
-            $name = trim(array_get($pairs, 0));
-            $value = trim(array_get($pairs, 1));
+            $name = trim(Arr::get($pairs, 0));
+            $value = trim(Arr::get($pairs, 1));
             static::parseParameter($cacheQuery, $name, $value);
         }
 
@@ -300,14 +301,14 @@ class Script extends BaseRestService
             $this->scriptConfig, $data, $logOutput);
 
         if (is_array($result) && array_key_exists('response', $result)) {
-            $result = array_get($result, 'response', []);
+            $result = Arr::get($result, 'response', []);
         }
 
         if (is_array($result) && array_key_exists('content', $result)) {
-            $content = array_get($result, 'content');
-            $contentType = array_get($result, 'content_type');
-            $status = array_get($result, 'status_code', HttpStatusCodeInterface::HTTP_OK);
-            $headers = (array)array_get($result, 'headers');
+            $content = Arr::get($result, 'content');
+            $contentType = Arr::get($result, 'content_type');
+            $status = Arr::get($result, 'status_code', HttpStatusCodeInterface::HTTP_OK);
+            $headers = (array)Arr::get($result, 'headers');
 
             $result = ResponseFactory::create($content, $contentType, $status, $headers);
         } else {
@@ -343,7 +344,7 @@ class Script extends BaseRestService
 
     protected function matchEventPath($search)
     {
-        $paths = array_keys((array)array_get($this->getApiDoc(), 'paths'));
+        $paths = array_keys((array)Arr::get($this->getApiDoc(), 'paths'));
         $pieces = explode('/', $search);
         foreach ($paths as $path) {
             // drop service from path
@@ -356,7 +357,7 @@ class Script extends BaseRestService
 
                 $resources = [];
                 foreach ($diffs as $ndx => $diff) {
-                    if (0 !== strpos($diff, '{')) {
+                    if (!str_starts_with($diff, '{')) {
                         // not a replacement parameters, see if another path works
                         continue 2;
                     }

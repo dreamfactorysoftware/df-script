@@ -7,6 +7,7 @@ use DreamFactory\Core\Exceptions\InternalServerErrorException;
 use DreamFactory\Core\Exceptions\ServiceUnavailableException;
 use DreamFactory\Core\Script\Components\BaseEngineAdapter;
 use \Log;
+use Illuminate\Support\Arr;
 
 /**
  * Abstract class for command executed engines, i.e. those outside of PHP control
@@ -31,7 +32,7 @@ abstract class ExecutedEngine extends BaseEngineAdapter
         } catch (\Exception $ex) {
             throw new ServiceUnavailableException($ex->getMessage(), $ex->getCode(), $ex->getPrevious());
         }
-        if (empty($this->commandName = array_get($settings, 'command_name'))) {
+        if (empty($this->commandName = Arr::get($settings, 'command_name'))) {
             throw new ServiceUnavailableException("Invalid configuration: missing command name.");
         }
 
@@ -113,7 +114,7 @@ abstract class ExecutedEngine extends BaseEngineAdapter
         $module = trim(str_replace(["'", '"'], null, $module), ' /');
 
         //  Check the configured script paths
-        if (null === ($script = array_get(static::$libraries, $module))) {
+        if (null === ($script = Arr::get(static::$libraries, $module))) {
             $script = $module;
         }
 

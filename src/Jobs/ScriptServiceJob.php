@@ -54,7 +54,7 @@ class ScriptServiceJob extends ScriptJob
                 'request'  => json_decode(Crypt::decrypt($this->request), true),
             ];
 
-            $logOutput = (isset($data['request']['parameters']['log_output']) ? $data['request']['parameters']['log_output'] : true);
+            $logOutput = ($data['request']['parameters']['log_output'] ?? true);
             if (null !== $this->handleScript('service.' . $service->getName(), $service->getScriptContent(),
                     $service->getType(), $service->getScriptConfig(), $data, $logOutput)
             ) {
