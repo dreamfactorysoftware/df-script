@@ -2,6 +2,7 @@
 namespace DreamFactory\Core\Script\Engines;
 
 use Cache;
+use Illuminate\Support\Arr;
 
 /**
  * Plugin for the Node Javascript engine
@@ -42,7 +43,7 @@ class NodeJs extends ExecutedEngine
 
         parent::__construct($settings);
 
-        $extensions = array_get($settings, 'extensions', []);
+        $extensions = Arr::get($settings, 'extensions', []);
         // accept comma-delimited string
         $this->extensions =
             (is_string($extensions)) ? array_map('trim', explode(',', trim($extensions, ','))) : $extensions;
@@ -62,16 +63,16 @@ class NodeJs extends ExecutedEngine
         $jsonEvent = $this->safeJsonEncode($data, false);
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
         $protocol = config('df.scripting.default_protocol', 'http');
-        $https = array_get($_SERVER, 'HTTPS');
-        if ((!empty($https) && ('off' != $https)) || (443 == array_get($_SERVER, 'SERVER_PORT'))) {
+        $https = Arr::get($_SERVER, 'HTTPS');
+        if ((!empty($https) && ('off' != $https)) || (443 == Arr::get($_SERVER, 'SERVER_PORT'))) {
             $protocol = "https";
         }
         $token = uniqid();
-        $apiKey = array_get($platform, 'session.api_key');
-        $sessionToken = array_get($platform, 'session.session_token');
+        $apiKey = Arr::get($platform, 'session.api_key');
+        $sessionToken = Arr::get($platform, 'session.session_token');
         $tokenCache = [
-            'app_id'  => array_get($platform, 'session.app.id'),
-            'user_id' => array_get($platform, 'session.user.id')
+            'app_id'  => Arr::get($platform, 'session.app.id'),
+            'user_id' => Arr::get($platform, 'session.user.id')
         ];
         Cache::add('script-token:' . $token, $tokenCache, 300); // script should not take longer than 300 seconds to run
 

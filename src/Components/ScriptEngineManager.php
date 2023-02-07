@@ -8,6 +8,7 @@ use DreamFactory\Core\Script\Engines\Php;
 use DreamFactory\Core\Script\Engines\Python;
 use DreamFactory\Core\Script\Engines\Python3;
 use InvalidArgumentException;
+use Illuminate\Support\Arr;
 
 /**
  * Scripting engine
@@ -127,7 +128,7 @@ class ScriptEngineManager
 
         $engines = $this->app['config']['df.script'];
 
-        return array_get($engines, $name, []);
+        return Arr::get($engines, $name, []);
     }
 
     /**

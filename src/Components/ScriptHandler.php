@@ -7,6 +7,7 @@ use DreamFactory\Core\Exceptions\RestException;
 use DreamFactory\Core\Utility\Session;
 use ScriptEngineManager;
 use Log;
+use Illuminate\Support\Arr;
 
 trait ScriptHandler
 {
@@ -48,23 +49,23 @@ trait ScriptHandler
             throw new InternalServerErrorException($message);
         }
 
-        if (!empty($ex = array_get($result, 'exception'))) {
+        if (!empty($ex = Arr::get($result, 'exception'))) {
             if ($ex instanceof \Exception) {
                 throw $ex;
             } elseif (is_array($ex)) {
-                $code = array_get($ex, 'code', null);
-                $message = array_get($ex, 'message', 'Unknown scripting error.');
-                $status = array_get($ex, 'status_code', HttpStatusCodeInterface::HTTP_INTERNAL_SERVER_ERROR);
+                $code = Arr::get($ex, 'code', null);
+                $message = Arr::get($ex, 'message', 'Unknown scripting error.');
+                $status = Arr::get($ex, 'status_code', HttpStatusCodeInterface::HTTP_INTERNAL_SERVER_ERROR);
                 throw new RestException($status, $message, $code);
             }
             throw new InternalServerErrorException(strval($ex));
         }
 
         // check for directly returned results, otherwise check for "response"
-        if (!empty($response = array_get($result, 'script_result'))) {
+        if (!empty($response = Arr::get($result, 'script_result'))) {
             if (isset($response, $response['error'])) {
                 if (is_array($response['error'])) {
-                    $msg = array_get($response, 'error.message');
+                    $msg = Arr::get($response, 'error.message');
                 } else {
                     $msg = $response['error'];
                 }

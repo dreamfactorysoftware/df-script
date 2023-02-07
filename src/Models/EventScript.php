@@ -100,7 +100,7 @@ class EventScript extends BaseSystemModel
                     throw new ServiceUnavailableException("All scripting is disabled for this instance.");
                     break;
                 default:
-                    $type = (isset($data['type'])) ? $data['type'] : null;
+                    $type = $data['type'] ?? null;
                     if (!empty($type) && (false !== stripos($disable, $type))) {
                         throw new ServiceUnavailableException("Scripting with $type is disabled for this instance.");
                     }

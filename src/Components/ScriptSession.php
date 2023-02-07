@@ -1,6 +1,8 @@
 <?php
 namespace DreamFactory\Core\Script\Components;
 
+use Illuminate\Support\Arr;
+
 /**
  * Scripting session object
  */
@@ -68,6 +70,6 @@ class ScriptSession
      */
     public function get($key, $defaultValue = null)
     {
-        return array_get($this->data, $key, $defaultValue);
+        return Arr::get($this->data, $key, $defaultValue);
     }
 }

@@ -2,6 +2,7 @@
 namespace DreamFactory\Core\Script\Services;
 
 use DreamFactory\Core\Contracts\ServiceResponseInterface;
+use Illuminate\Support\Arr;
 
 /**
  * Python Script
@@ -36,7 +37,7 @@ class Python extends Script
             'resource' => $this->resourcePath
         ];
 
-        $parameters = array_get($data, 'request.parameters');
+        $parameters = Arr::get($data, 'request.parameters');
 
         // If a json payload is provided in a GET call then that
         // payload gets passed in as query parameters (key) and it
@@ -52,7 +53,7 @@ class Python extends Script
             }
         }
 
-        array_set($data, 'request.parameters', $parameters);
+        Arr::set($data, 'request.parameters', $parameters);
 
         return $data;
     }
