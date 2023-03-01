@@ -30,7 +30,7 @@
   "prefer-stable": true,
   "require":     {
     "php": "^8.0",
-    "dreamfactory/df-core":   "~1.0",
+    "dreamfactory/df-core":   "~1.1",
     "dreamfactory/df-system": "~0.5"
   },
   "autoload":    {
