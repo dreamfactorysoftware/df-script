@@ -31,7 +31,7 @@
   "require":     {
     "php": "^8.0",
     "dreamfactory/df-core":   "~1.0",
-    "dreamfactory/df-system": "~0.5"
+    "dreamfactory/df-system": "~0.6"
   },
   "autoload":    {
     "psr-4": {
