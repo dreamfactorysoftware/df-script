@@ -1,0 +1,28 @@
+repo_name: dreamfactorysoftware/df-script
+report_id: b6be0be3026e68226255d924f791a4fb
+repo_type: Public
+timestamp: '2023-12-06T22:37:41+00:00'
+requested_by: daniilly
+provider: github
+branch: master
+detected_tools_count: 2
+tools:
+- name: PHP
+  description: A popular general-purpose scripting language that is especially suited
+    to web development
+  website_url: http://www.php.net/
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/991/hwUcGZ41_400x400.jpg
+  detection_source: Repo Metadata
+- name: Git
+  description: Fast, scalable, distributed revision control system
+  website_url: http://git-scm.com/
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Version Control System
+  image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source: Repo Metadata
