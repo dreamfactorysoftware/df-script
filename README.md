@@ -4,7 +4,7 @@
 
 ## Overview
 
-DreamFactory(™) Script is a package built on top of the DreamFactory core, and as such retains the requirements of the [df-core](https://github.com/dreamfactorysoftware/df-core). 
+DreamFactory is a secure, self-hosted enterprise data access platform that provides governed API access to any data source, connecting enterprise applications and on-prem LLMs with role-based access and identity passthrough.
 
 ## Documentation
 
