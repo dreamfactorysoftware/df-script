@@ -155,7 +155,7 @@ class ScriptableEventHandler
             }
         } elseif ($script = $this->getEventScript($event->name . '.queued')) {
             Log::debug('Queued service event script found: ' . $event->name);
-            $result = $this->dispatchNow(new ServiceEventScriptJob($event->name . '.queued', $event, $script->config));
+            $result = $this->dispatchSync(new ServiceEventScriptJob($event->name . '.queued', $event, $script->config));
             Log::debug('Service event queued: ' . $event->name . PHP_EOL . $result);
         }
 
