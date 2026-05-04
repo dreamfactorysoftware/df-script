@@ -4,6 +4,7 @@ namespace DreamFactory\Core\Script\Components;
 use Cache;
 use Config;
 use DreamFactory\Core\Components\ExceptionResponse;
+use DreamFactory\Core\System\Components\SsrfValidator;
 use DreamFactory\Core\Script\Contracts\ScriptingEngineInterface;
 use DreamFactory\Core\Enums\DataFormats;
 use DreamFactory\Core\Script\Exceptions\ScriptException;
@@ -313,6 +314,11 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
      */
     protected static function externalRequest($method, $url, $payload = [], $curlOptions = [])
     {
+        // Reject URLs pointing at loopback, RFC 1918 private space, AWS/GCP/
+        // Azure metadata, or non-http(s) schemes. Same validator df-system
+        // and df-email use for caller-supplied import URLs.
+        SsrfValidator::validateExternalUrl($url);
+
         if (!empty($parameters = (array)Arr::get($curlOptions, 'parameters'))) {
             unset($curlOptions['parameters']);
             $paramStr = '';
@@ -509,9 +515,34 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
     {
         return [
             'api'     => static::getExposedApi(),
-            'config'  => Config::get('df'),
+            'config'  => static::getScriptSafeConfig(),
             'session' => Session::all(),
             'store'   => new ScriptSession(Config::get("script.$identifier.store"), app('cache'))
+        ];
+    }
+
+    /**
+     * Curated allowlist of df.* config exposed to user scripts.
+     *
+     * Replaces the previous Config::get('df') wildcard, which leaked DB
+     * connection strings, encryption keys, mail credentials, cache config,
+     * and every other secret stored under the df.* namespace into every
+     * script's _platform.config object.
+     *
+     * Only keys that scripts have a legitimate need for are returned. Add
+     * new keys here deliberately, never widen by passing a parent scope.
+     */
+    public static function getScriptSafeConfig(): array
+    {
+        return [
+            'version'                  => Config::get('df.version'),
+            'api_version'              => Config::get('df.api_version'),
+            'api_route_prefix'         => Config::get('df.api_route_prefix'),
+            'always_wrap_resources'    => Config::get('df.always_wrap_resources'),
+            'resources_wrapper'        => Config::get('df.resources_wrapper'),
+            'default_response_type'    => Config::get('df.default_response_type'),
+            'script_inline_char_limit' => Config::get('df.script_inline_char_limit'),
+            'scripting'                => Config::get('df.scripting'),
         ];
     }
 

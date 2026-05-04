@@ -85,7 +85,6 @@ class Python3 extends ExecutedEngine
         }
         $scriptLines = explode("\n", $script);
 
-        echo $jsonEvent;
         $enrobedScript = <<<python
 import http.client, json;
 from munch import munchify, unmunchify;
