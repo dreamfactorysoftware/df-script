@@ -19,13 +19,13 @@ use DreamFactory\Core\Script\Models\EventScript;
 use DreamFactory\Core\System\Resources\Cache;
 use DreamFactory\Core\Utility\ResponseFactory;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Support\Facades\Bus;
 use Log;
 use Illuminate\Support\Arr;
 
 class ScriptableEventHandler
 {
-    use ScriptHandler, DispatchesJobs;
+    use ScriptHandler;
 
     /**
      * Register the listeners for the subscriber.
@@ -143,7 +143,7 @@ class ScriptableEventHandler
             }
         } elseif ($script = $this->getEventScript($event->name . '.queued')) {
             Log::debug('Queued service event script found: ' . $event->name);
-            $result = $this->dispatchNow(new ServiceEventScriptJob($event->name . '.queued', $event, $script->config));
+            $result = Bus::dispatchSync(new ServiceEventScriptJob($event->name . '.queued', $event, $script->config));
             Log::debug('Service event queued: ' . $event->name . PHP_EOL . $result);
         }
 
