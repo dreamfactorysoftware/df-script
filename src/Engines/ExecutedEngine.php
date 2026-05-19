@@ -85,6 +85,50 @@ abstract class ExecutedEngine extends BaseEngineAdapter
     }
 
     /**
+     * Override the PhpExecutable trait's execute() so that stderr from the
+     * script interpreter is captured and logged on non-zero exit. Without this,
+     * missing Python modules, SyntaxErrors, and uncaught runtime exceptions
+     * surface only as "Executed command returned with error code: N" with no
+     * hint of the underlying cause.
+     *
+     * Signature and stdout/$return semantics match the trait's version, so
+     * existing callers are unaffected.
+     */
+    public function execute($command, array &$output = null, &$return = null)
+    {
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
+        ];
+        $process = @proc_open($command, $descriptors, $pipes);
+        if (!is_resource($process)) {
+            $return = 1;
+            $output = [];
+            return '';
+        }
+
+        fclose($pipes[0]);
+        $stdout = stream_get_contents($pipes[1]);
+        $stderr = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $return = proc_close($process);
+
+        $stdout = rtrim((string)$stdout, "\n");
+        $output = $stdout === '' ? [] : explode("\n", $stdout);
+
+        if ($return !== 0 && $stderr !== '' && $stderr !== false) {
+            Log::error(
+                "Script execution failed (exit={$return}). stderr:\n" .
+                rtrim($stderr, "\n")
+            );
+        }
+
+        return $output === [] ? '' : end($output);
+    }
+
+    /**
      * Process a single script
      *
      * @param string $path            The path/to/the/script to read and execute
