@@ -73,7 +73,7 @@ class Python3 extends ExecutedEngine
         if ((!empty($https) && ('off' != $https)) || (443 == Arr::get($_SERVER, 'SERVER_PORT'))) {
             $protocol = 'https';
         }
-        $token = uniqid();
+        $token = bin2hex(random_bytes(32));
         $tokenCache = [
             'app_id'  => Arr::get($platform, 'session.app.id'),
             'user_id' => Arr::get($platform, 'session.user.id')

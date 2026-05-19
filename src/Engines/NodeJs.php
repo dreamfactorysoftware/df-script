@@ -67,7 +67,7 @@ class NodeJs extends ExecutedEngine
         if ((!empty($https) && ('off' != $https)) || (443 == Arr::get($_SERVER, 'SERVER_PORT'))) {
             $protocol = "https";
         }
-        $token = uniqid();
+        $token = bin2hex(random_bytes(32));
         $apiKey = Arr::get($platform, 'session.api_key');
         $sessionToken = Arr::get($platform, 'session.session_token');
         $tokenCache = [
