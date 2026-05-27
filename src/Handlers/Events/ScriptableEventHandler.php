@@ -19,13 +19,13 @@ use DreamFactory\Core\Script\Models\EventScript;
 use DreamFactory\Core\System\Resources\Cache;
 use DreamFactory\Core\Utility\ResponseFactory;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Support\Facades\Bus;
 use Log;
 use Illuminate\Support\Arr;
 
 class ScriptableEventHandler
 {
-    use ScriptHandler, DispatchesJobs;
+    use ScriptHandler;
 
     /**
      * Register the listeners for the subscriber.
@@ -71,6 +71,13 @@ class ScriptableEventHandler
         if ($script = $this->getEventScript($event->name)) {
             Log::debug('API event script found: ' . $event->name);
             $data = $event->makeData();
+            $data['_event'] = [
+                'name'        => $event->name,
+                'stage'       => ($event instanceof PreProcessApiEvent)
+                                  ? 'pre_process'
+                                  : (($event instanceof PostProcessApiEvent) ? 'post_process' : 'api'),
+                'script_name' => $script->name,
+            ];
 
             if (null !== $result = $this->handleEventScript($script, $data)) {
                 if ($script->allow_event_modification) {
@@ -137,13 +144,18 @@ class ScriptableEventHandler
         if ($script = $this->getEventScript($event->name)) {
             Log::debug('Service event script found: ' . $event->name);
             $data = $event->makeData();
+            $data['_event'] = [
+                'name'        => $event->name,
+                'stage'       => ($event instanceof ApiEvent) ? 'api' : 'service',
+                'script_name' => $script->name,
+            ];
 
             if (null !== $result = $this->handleEventScript($script, $data)) {
                 return $this->handleEventScriptResult($script, $result);
             }
         } elseif ($script = $this->getEventScript($event->name . '.queued')) {
             Log::debug('Queued service event script found: ' . $event->name);
-            $result = $this->dispatchNow(new ServiceEventScriptJob($event->name . '.queued', $event, $script->config));
+            $result = Bus::dispatchSync(new ServiceEventScriptJob($event->name . '.queued', $event, $script->config));
             Log::debug('Service event queued: ' . $event->name . PHP_EOL . $result);
         }
 
@@ -157,7 +169,16 @@ class ScriptableEventHandler
      */
     public function getEventScript($name)
     {
+        // In-flight guard: if a load for this script is already on the stack,
+        // bail out to break a cycle. This happens when the script body is
+        // stored on a service that itself fires the event we're servicing.
+        static $loading = [];
+        if (isset($loading[$name])) {
+            return null;
+        }
+
         $cacheKey = Cache::EVENT_SCRIPT_CACHE_PREFIX . $name;
+        $loading[$name] = true;
         try {
             /** @var EventScript $model */
             $model = \Cache::rememberForever($cacheKey, function () use ($name) {
@@ -210,6 +231,8 @@ class ScriptableEventHandler
             }
         } catch (\Exception $ex) {
             \Log::error('Error occurred while loading event script. ' . $ex->getMessage());
+        } finally {
+            unset($loading[$name]);
         }
 
         return null;

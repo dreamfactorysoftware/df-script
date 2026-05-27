@@ -14,7 +14,7 @@ use DreamFactory\Core\Services\BaseRestService;
 use DreamFactory\Core\Utility\ResourcesWrapper;
 use DreamFactory\Core\Utility\ResponseFactory;
 use DreamFactory\Core\Utility\Session;
-use Illuminate\Foundation\Bus\DispatchesJobs;
+use Illuminate\Support\Facades\Bus;
 use Log;
 use Illuminate\Support\Arr;
 
@@ -24,7 +24,7 @@ use Illuminate\Support\Arr;
  */
 class Script extends BaseRestService
 {
-    use ScriptHandler, DispatchesJobs;
+    use ScriptHandler;
 
     //*************************************************************************
     //	Members
@@ -275,7 +275,7 @@ class Script extends BaseRestService
         if ($this->queued) {
             $job = new ScriptServiceJob($this->getServiceId(), $this->request, $this->resourcePath,
                 $this->scriptConfig);
-            $result = $this->dispatch($job);
+            $result = Bus::dispatch($job);
             Log::debug('API service script queued: ' . $this->name . PHP_EOL . $result);
 
             return ResponseFactory::create(['success' => true], null, HttpStatusCodeInterface::HTTP_ACCEPTED);

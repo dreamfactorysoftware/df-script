@@ -26,7 +26,13 @@ class ServiceEventScriptJob extends ScriptJob
     public function __construct($id, ServiceEvent $event, $config = [])
     {
         $this->script_id = $id;
-        $this->event = Crypt::encrypt(json_encode($event->makeData()));
+        $data = $event->makeData();
+        $data['_event'] = [
+            'name'        => $event->name,
+            'stage'       => 'queued',
+            'script_name' => $id,
+        ];
+        $this->event = Crypt::encrypt(json_encode($data));
         $this->session = Crypt::encrypt(json_encode(Session::all()));
 
         parent::__construct($config);
