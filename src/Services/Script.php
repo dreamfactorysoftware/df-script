@@ -123,7 +123,11 @@ class Script extends BaseRestService
                             $serviceName,
                             Verbs::GET,
                             '_repo/' . $scmRepo,
-                            ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1]
+                            ['path' => $storagePath, 'branch' => $scmRef, 'content' => 1],
+                            [],
+                            null,
+                            null,
+                            false // admin-configured link: privileged internal fetch, not subject to caller RBAC
                         );
                         $content = $result->getContent();
                     } else {
@@ -131,17 +135,25 @@ class Script extends BaseRestService
                             $serviceName,
                             Verbs::GET,
                             $storagePath,
-                            ['include_properties' => 1, 'content' => 1]
+                            ['include_properties' => 1, 'content' => 1],
+                            [],
+                            null,
+                            null,
+                            false // admin-configured link: privileged internal fetch, not subject to caller RBAC
                         );
                         $content = base64_decode(Arr::get($result->getContent(), 'content'));
                     }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to fetch remote script. ' . $e->getMessage());
-                    $content = '';
+                    // Surface link failures instead of silently running an empty script.
+                    \Log::error('Failed to fetch remote script for service ' . $this->name . '. ' . $e->getMessage());
+                    throw $e;
                 }
             }
 
-            $this->addToCache($cacheKey, $content, true);
+            // Only cache a real body; never poison the cache with an empty result.
+            if (!empty($content)) {
+                $this->addToCache($cacheKey, $content, true);
+            }
         }
 
         return $content;
