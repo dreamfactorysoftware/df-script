@@ -171,11 +171,21 @@ _wrapperResult = (function() {
         console.log(JSON.stringify(_event));
     };
     
+    function _checkArgs(name, signature, args) {
+        for (var i = 0; i < signature.length - 1; i++) {
+            if (typeof args[i] === 'function') {
+                throw new Error('platform.api.' + name + ': callback must be the last argument: ' +
+                    name + '(' + signature.join(', ') + ')');
+            }
+        }
+    }
+
     _platform.api = {
         call: function (verb, path, payload, options, callback) {
-            options = (!options) ? {} : options;
+            _checkArgs('call', ['verb', 'path', 'payload', 'options', 'callback'], arguments);
+            options = (options && typeof options === 'object') ? options : {};
             var headers = (options.headers) ? options.headers : (options.parameters)? {} : options;
-            
+
             var host = getHost(path);
             if (host.indexOf(':') !== -1){
                 host = host.split(':');    
@@ -217,32 +227,37 @@ _wrapperResult = (function() {
                 });
 
                 response.on('end', function () {
-                    callback(body, response);
+                    if (typeof callback === 'function') callback(body, response);
                 });
             };
 
             var http = require(getProtocol(path));
             var request = http.request(_options, _callback);
-            request.write(payload);
+            if (payload !== undefined) request.write(payload);
             request.end();
             
             return request;
         },
         get: function (path, options, callback) {
+            _checkArgs('get', ['path', 'options', 'callback'], arguments);
             return this.call('GET', path, '', options, callback);
         },
         post: function (path, payload, options, callback) {
+            _checkArgs('post', ['path', 'payload', 'options', 'callback'], arguments);
             return this.call('POST', path, payload, options, callback);
         },
         put: function (path, payload, options, callback) {
+            _checkArgs('put', ['path', 'payload', 'options', 'callback'], arguments);
             return this.call('PUT', path, payload, options, callback);
         },
         patch: function (path, payload, options, callback) {
+            _checkArgs('patch', ['path', 'payload', 'options', 'callback'], arguments);
             return this.call('PATCH', path, payload, options, callback);
         },
         delete: function (path, payload, options, callback) {
+            _checkArgs('delete', ['path', 'payload', 'options', 'callback'], arguments);
             if (payload) {
-                options = (!options) ? {} : options;
+                options = (options && typeof options === 'object') ? options : {};
                 var headers = (options.headers) ? options.headers : (options.parameters) ? {} : options;
                 headers['x-http-method'] = 'DELETE';
                 options.headers = headers;
