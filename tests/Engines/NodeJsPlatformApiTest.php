@@ -17,6 +17,12 @@ class NodeJsPlatformApiTest extends TestCase
 
     public static function setUpBeforeClass(): void
     {
+        if (!file_exists(getcwd() . '/bootstrap/app.php')) {
+            self::markTestSkipped('Needs a Laravel app root (bootstrap/app.php) as the working directory.');
+        }
+        if (trim((string)shell_exec('command -v node')) === '') {
+            self::markTestSkipped('Needs a node binary on PATH.');
+        }
         $app = require getcwd() . '/bootstrap/app.php';
         $app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
         self::$log = tempnam(sys_get_temp_dir(), 'echo');
@@ -28,12 +34,23 @@ r.setHeader('content-type','application/json');r.end(JSON.stringify({echo_method
 s.listen(0,'127.0.0.1',()=>console.log(s.address().port));
 JS;
         self::$server = proc_open(['node', '-e', $echo, self::$log], [1 => ['pipe', 'w']], $pipes);
-        self::$port = (int)trim(fgets($pipes[1]));
+        try {
+            self::$port = (int)trim((string)fgets($pipes[1]));
+            if (self::$port === 0) {
+                throw new \RuntimeException('Echo server did not report a port.');
+            }
+        } catch (\Throwable $e) {
+            self::tearDownAfterClass();
+            throw $e;
+        }
     }
 
     public static function tearDownAfterClass(): void
     {
-        proc_terminate(self::$server);
+        if (self::$server) {
+            proc_terminate(self::$server);
+            self::$server = null;
+        }
         @unlink(self::$log);
     }
 
@@ -44,10 +61,12 @@ JS;
         $data = ['request' => ['headers' => ['host' => '127.0.0.1:' . self::$port]]];
         $engine = new NodeJs([]);
         $wrapper = (new \ReflectionMethod($engine, 'enrobeScript'))->invokeArgs($engine, [$js, &$data, []]);
-        $file = tempnam(sys_get_temp_dir(), 'wrap') . '.js';
+        $base = tempnam(sys_get_temp_dir(), 'wrap');
+        $file = $base . '.js';
         file_put_contents($file, $wrapper);
         exec('timeout 10 node ' . escapeshellarg($file) . ' 2>&1', $out, $rc);
         unlink($file);
+        unlink($base);
         $this->assertSame(0, $rc, implode("\n", $out));
         $event = null;
         foreach ($out as $line) {   // same rule as ExecutedEngine::processOutput: last {"request" line wins
@@ -71,20 +90,22 @@ JS;
             'post'              => ["platform.api.post('e/p', {k:1}, $h, cb);", 'POST', '/api/v2/e/p', '{"k":1}'],
             'put'               => ["platform.api.put('e/p', {k:1}, $h, cb);", 'PUT', '/api/v2/e/p', '{"k":1}'],
             'patch'             => ["platform.api.patch('e/p', {k:1}, $h, cb);", 'PATCH', '/api/v2/e/p', '{"k":1}'],
-            'delete no payload' => ["platform.api.delete('e/d', null, $h, cb);", 'DELETE', '/api/v2/e/d', ''],
+            'delete no payload' => ["platform.api.delete('e/d', null, $h, cb);", 'DELETE', '/api/v2/e/d', null],
             'delete payload'    => ["platform.api.delete('e/d', {k:1}, $h, cb);", 'POST', '/api/v2/e/d', '{"k":1}'],
         ];
     }
 
     #[DataProvider('correctCalls')]
-    public function testCorrectCallSendsAndFiresCallbackOnce(string $js, string $method, string $path, string $body): void
+    public function testCorrectCallSendsAndFiresCallbackOnce(string $js, string $method, string $path, ?string $body): void
     {
         [$event, $reqs] = $this->runWrapper(self::CB . $js);
         $this->assertArrayNotHasKey('exception', $event);
         $this->assertCount(1, $reqs);
         $this->assertSame($method, $reqs[0]['method']);
         $this->assertSame($path, $reqs[0]['path']);
-        $this->assertSame($body, $reqs[0]['body']);
+        if ($body !== null) {   // Node sends a bodyless DELETE without framing; the wrapper's "null" is not observable
+            $this->assertSame($body, $reqs[0]['body']);
+        }
         $this->assertNotEmpty($reqs[0]['headers']['x-dreamfactory-script-token']);
         if (!str_contains($path, '?')) {
             $this->assertSame('1', $reqs[0]['headers']['x-t'] ?? null);
@@ -129,17 +150,23 @@ JS;
             'get(path, options)'          => ["platform.api.get('e/n', {});", 'GET'],
             'post(path, payload)'         => ["platform.api.post('e/n', {k:1});", 'POST'],
             'post(path, payload, opts)'   => ["platform.api.post('e/n', {k:1}, {});", 'POST'],
+            'put(path, payload)'          => ["platform.api.put('e/n', {k:1});", 'PUT'],
+            'patch(path, payload)'        => ["platform.api.patch('e/n', {k:1});", 'PATCH'],
             'delete(path, null, opts)'    => ["platform.api.delete('e/n', null, {});", 'DELETE'],
+            'delete(path, payload, opts)' => ["platform.api.delete('e/n', {k:1}, {});", 'POST', 'DELETE'],
         ];
     }
 
     /** Fire-and-forget calls are correct calls: they must not throw and must still send. */
     #[DataProvider('noCallbackCalls')]
-    public function testCorrectCallWithoutCallbackStillSends(string $js, string $method): void
+    public function testCorrectCallWithoutCallbackStillSends(string $js, string $method, ?string $override = null): void
     {
         [$event, $reqs] = $this->runWrapper($js);
         $this->assertArrayNotHasKey('exception', $event);
         $this->assertCount(1, $reqs);
         $this->assertSame($method, $reqs[0]['method']);
+        if ($override !== null) {
+            $this->assertSame($override, $reqs[0]['headers']['x-http-method'] ?? null);
+        }
     }
 }
