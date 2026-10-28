@@ -171,8 +171,18 @@ _wrapperResult = (function() {
         console.log(JSON.stringify(_event));
     };
     
+    function _checkArgs(name, signature, args) {
+        for (var i = 0; i < signature.length - 1; i++) {
+            if (typeof args[i] === 'function') {
+                throw new Error('platform.api.' + name + ': callback must be the last argument: ' +
+                    name + '(' + signature.join(', ') + ')');
+            }
+        }
+    }
+
     _platform.api = {
         call: function (verb, path, payload, options, callback) {
+            _checkArgs('call', ['verb', 'path', 'payload', 'options', 'callback'], arguments);
             options = (!options) ? {} : options;
             var headers = (options.headers) ? options.headers : (options.parameters)? {} : options;
             
@@ -229,18 +239,23 @@ _wrapperResult = (function() {
             return request;
         },
         get: function (path, options, callback) {
+            _checkArgs('get', ['path', 'options', 'callback'], arguments);
             return this.call('GET', path, '', options, callback);
         },
         post: function (path, payload, options, callback) {
+            _checkArgs('post', ['path', 'payload', 'options', 'callback'], arguments);
             return this.call('POST', path, payload, options, callback);
         },
         put: function (path, payload, options, callback) {
+            _checkArgs('put', ['path', 'payload', 'options', 'callback'], arguments);
             return this.call('PUT', path, payload, options, callback);
         },
         patch: function (path, payload, options, callback) {
+            _checkArgs('patch', ['path', 'payload', 'options', 'callback'], arguments);
             return this.call('PATCH', path, payload, options, callback);
         },
         delete: function (path, payload, options, callback) {
+            _checkArgs('delete', ['path', 'payload', 'options', 'callback'], arguments);
             if (payload) {
                 options = (!options) ? {} : options;
                 var headers = (options.headers) ? options.headers : (options.parameters) ? {} : options;
