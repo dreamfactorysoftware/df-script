@@ -169,4 +169,58 @@ JS;
             $this->assertSame($override, $reqs[0]['headers']['x-http-method'] ?? null);
         }
     }
+
+    /** df-script#74: no callback must not end the script with a 500 "callback is not a function". */
+    #[DataProvider('noCallbackCalls')]
+    public function testCorrectCallWithoutCallbackEndsCleanly(string $js): void
+    {
+        [$event] = $this->runWrapper($js);
+        $this->assertArrayNotHasKey('response', $event);
+    }
+
+    /** df-script#72: delete(path) used to throw in request.write(undefined) and hang. */
+    public function testDeleteWithoutPayloadSendsAndExits(): void
+    {
+        [$event, $reqs] = $this->runWrapper("platform.api.delete('e/d');");
+        $this->assertArrayNotHasKey('exception', $event);
+        $this->assertArrayNotHasKey('response', $event);
+        $this->assertCount(1, $reqs);
+        $this->assertSame('DELETE', $reqs[0]['method']);
+        $this->assertSame('/api/v2/e/d', $reqs[0]['path']);
+    }
+
+    public static function callWithoutPayload(): array
+    {
+        return [
+            'call(verb, path)'                    => ["platform.api.call('GET', 'e/c');", false],
+            'call(verb, path, undefined, {}, cb)' => ["platform.api.call('GET', 'e/c', undefined, {}, cb);", true],
+        ];
+    }
+
+    /** df-script#73 */
+    #[DataProvider('callWithoutPayload')]
+    public function testCallWithoutPayloadSendsAndExits(string $js, bool $hasCallback): void
+    {
+        [$event, $reqs] = $this->runWrapper(self::CB . $js);
+        $this->assertArrayNotHasKey('exception', $event);
+        $this->assertCount(1, $reqs);
+        $this->assertSame('GET', $reqs[0]['method']);
+        $this->assertSame('', $reqs[0]['body']);
+        if ($hasCallback) {
+            $this->assertSame(1, $event['response']['content']['fired']);
+        } else {
+            $this->assertArrayNotHasKey('response', $event);
+        }
+    }
+
+    /** df-script#70: a non-object options value must not become the headers. */
+    public function testNonObjectOptionsAreIgnored(): void
+    {
+        [$event, $reqs] = $this->runWrapper(self::CB . "platform.api.post('e/p', {k:1}, 'junk', cb);");
+        $this->assertArrayNotHasKey('exception', $event);
+        $this->assertCount(1, $reqs);
+        $this->assertSame('POST', $reqs[0]['method']);
+        $this->assertNotEmpty($reqs[0]['headers']['x-dreamfactory-script-token']);
+        $this->assertSame(1, $event['response']['content']['fired']);
+    }
 }
