@@ -73,12 +73,7 @@ class Python3 extends ExecutedEngine
         if ((!empty($https) && ('off' != $https)) || (443 == Arr::get($_SERVER, 'SERVER_PORT'))) {
             $protocol = 'https';
         }
-        $token = bin2hex(random_bytes(32));
-        $tokenCache = [
-            'app_id'  => Arr::get($platform, 'session.app.id'),
-            'user_id' => Arr::get($platform, 'session.user.id')
-        ];
-        Cache::add('script-token:'.$token, $tokenCache, 300); // script should not take longer than 300 seconds to run
+        $token = $this->registerScriptToken(bin2hex(random_bytes(32)), $platform);
 
         if (empty($script)) {
             $script = 'pass;';
