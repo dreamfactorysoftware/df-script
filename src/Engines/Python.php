@@ -35,37 +35,10 @@ class Python extends ExecutedEngine
 
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
+        // Embedded as is: the script defines true, false and null, so the JSON is a valid
+        // Python expression wherever these values appear.
         $jsonEvent = $this->safeJsonEncode($data, false);
-
         $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
-
-        $jsonPlatform = str_replace(
-            [
-                ":null,", ":null",
-                ":false,", ":false",
-                ":true,", ":true"
-            ],
-            [
-                ":None,", ":None",
-                ":False,", ":False",
-                ":True,", ":True"
-            ],
-            $jsonPlatform
-        );
-
-        $jsonEvent = str_replace(
-            [
-                ":null,", ":null",
-                ":false,", ":false",
-                ":true,", ":true"
-            ],
-            [
-            ":None,", ":None",
-            ":False,", ":False",
-            ":True,", ":True"
-            ],
-            $jsonEvent
-        );
 
         $protocol = config('df.scripting.default_protocol', 'http');
         $https = Arr::get($_SERVER, 'HTTPS');
@@ -85,6 +58,7 @@ class Python extends ExecutedEngine
 import httplib, json;
 from bunch import bunchify, unbunchify;
 
+true, false, null = True, False, None;
 eventJson = $jsonEvent;
 platformJson = $jsonPlatform;
 
