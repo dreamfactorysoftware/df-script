@@ -80,15 +80,12 @@ class Python3 extends ExecutedEngine
         }
         $scriptLines = explode("\n", $script);
 
-        echo $jsonEvent;
         $enrobedScript = <<<python
 import http.client, json;
 from munch import munchify, unmunchify;
 
 eventJson = $jsonEvent;
-print(eventJson);
 platformJson = $jsonPlatform;
-print(platformJson);
 
 _event = munchify(eventJson);
 _platform = munchify(platformJson);

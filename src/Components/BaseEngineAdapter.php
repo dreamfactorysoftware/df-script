@@ -124,10 +124,11 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
     ){
         $result = $message = false;
 
-        try {
-            //  Don't show output
-            ob_start();
+        //  Capture script output, it is returned through $output, never sent with the response
+        ob_start();
+        $bufferLevel = ob_get_level();
 
+        try {
             if (!str_contains($script, "\n") && is_file($script)) {
                 $result = $this->executeScript($script, $identifier, $data, $config);
             } else {
@@ -137,10 +138,14 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
             $message = $ex->getMessage();
 
             \Log::error($message = "Exception executing script: $message");
+        } finally {
+            //  Clean up, also when the engine throws. Buffers the script opened and
+            //  left open are closed as well, keeping their content in order.
+            $output = '';
+            while (ob_get_level() >= $bufferLevel && false !== ($chunk = ob_get_clean())) {
+                $output = $chunk . $output;
+            }
         }
-
-        //  Clean up
-        $output = ob_get_clean();
 
         if (boolval(\Config::get('df.log_script_memory_usage', false))) {
             \Log::debug('Engine memory usage: ' . static::resizeBytes(memory_get_usage(true)));

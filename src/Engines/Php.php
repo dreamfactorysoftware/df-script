@@ -2,6 +2,7 @@
 namespace DreamFactory\Core\Script\Engines;
 
 use DreamFactory\Core\Script\Components\BaseEngineAdapter;
+use DreamFactory\Core\Script\Exceptions\ScriptException;
 use \Log;
 
 /**
@@ -46,7 +47,14 @@ class Php extends BaseEngineAdapter
         // todo Look for a better way!
         $script = static::stripPhpTag($script);
         $enrobedScript = $this->enrobeScript($script);
-        if (false === $event = @eval($enrobedScript)){
+        try {
+            $event = @eval($enrobedScript);
+        } catch (\Error $ex) {
+            // A parse error in the script, or an engine error the script did not catch,
+            // is reported like any other script failure.
+            throw new ScriptException($ex->getMessage());
+        }
+        if (false === $event){
             $error = error_get_last();
             $message = (isset($error['message']) ? $error['message']: null);
             Log::error("Exception executing PHP script: $message");
