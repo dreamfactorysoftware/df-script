@@ -122,7 +122,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
         array &$data = [],
         &$output = null
     ){
-        $result = $message = false;
+        $result = $failure = false;
 
         //  Capture script output, it is returned through $output, never sent with the response
         ob_start();
@@ -135,27 +135,54 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
                 $result = $this->executeString($script, $identifier, $data, $config);
             }
         } catch (ScriptException $ex) {
-            $message = $ex->getMessage();
-
-            \Log::error($message = "Exception executing script: $message");
+            $failure = $ex;
         } finally {
-            //  Clean up, also when the engine throws. Buffers the script opened and
-            //  left open are closed as well, keeping their content in order.
-            $output = '';
-            while (ob_get_level() >= $bufferLevel && false !== ($chunk = ob_get_clean())) {
-                $output = $chunk . $output;
-            }
+            //  Clean up, also when the engine throws.
+            $output = static::closeOutputBuffers($bufferLevel);
         }
 
         if (boolval(\Config::get('df.log_script_memory_usage', false))) {
             \Log::debug('Engine memory usage: ' . static::resizeBytes(memory_get_usage(true)));
         }
 
-        if (false !== $message) {
-            throw new ScriptException($message, $output);
+        if (false !== $failure) {
+            $message = 'Exception executing script: ' . $failure->getMessage();
+            //  Log the engine's original error when there is one, with its trace
+            \Log::error($message, ['exception' => $failure->getPrevious() ?: $failure]);
+
+            throw new ScriptException($message, $output, null, $failure);
         }
 
         return $result;
+    }
+
+    /**
+     * Closes the output buffer runScript() opened at $level and any buffers the script
+     * opened on top of it and left open.
+     *
+     * @param int $level
+     *
+     * @return string The content of the closed buffers, in the order it was written
+     */
+    protected static function closeOutputBuffers($level)
+    {
+        $output = '';
+        while (($current = ob_get_level()) >= $level) {
+            $status = ob_get_status();
+            if (!(($status['flags'] ?? 0) & PHP_OUTPUT_HANDLER_REMOVABLE)) {
+                //  a buffer opened as not removable stays, and so do the ones below it
+                break;
+            }
+            $chunk = ob_get_clean();
+            if (false !== $chunk) {
+                $output = $chunk . $output;
+            }
+            if (false === $chunk || ob_get_level() >= $current) {
+                break;
+            }
+        }
+
+        return $output;
     }
 
     /**

@@ -7,6 +7,7 @@ use DreamFactory\Core\Script\Components\BaseEngineAdapter;
 use DreamFactory\Core\Script\Engines\Php;
 use DreamFactory\Core\Script\Engines\Python3;
 use DreamFactory\Core\Script\Exceptions\ScriptException;
+use Illuminate\Support\Facades\Log;
 use Orchestra\Testbench\TestCase;
 
 /**
@@ -73,8 +74,9 @@ class ScriptOutputTest extends TestCase
             $engine->runScript("line\none", 'test', [], $data);
             $this->fail('expected a ScriptException');
         } catch (ScriptException $e) {
-            $this->assertStringContainsString('boom', $e->getMessage());
+            $this->assertSame('Exception executing script: boom', $e->getMessage());
             $this->assertSame('before failing', $e->getOutput());
+            $this->assertInstanceOf(ScriptException::class, $e->getPrevious());
         }
 
         $this->assertSame($level, ob_get_level());
@@ -101,6 +103,7 @@ class ScriptOutputTest extends TestCase
 
     public function testPhpScriptErrorIsReportedAsScriptException(): void
     {
+        $this->app['config']->set('app.debug', false);
         $level = ob_get_level();
         $data = ['request' => []];
         $output = null;
@@ -109,14 +112,78 @@ class ScriptOutputTest extends TestCase
             (new Php())->runScript("echo 'partial';\nthrow new \\Error('script failed');", 'test', [], $data, $output);
             $this->fail('expected a ScriptException');
         } catch (ScriptException $e) {
-            $this->assertStringContainsString('script failed', $e->getMessage());
+            $this->assertSame('Exception executing script: Error on line 2', $e->getMessage());
+            $this->assertSame('partial', $e->getOutput());
+            $error = $e->getPrevious()?->getPrevious();
+            $this->assertInstanceOf(\Error::class, $error, 'the original error stays attached');
+            $this->assertSame('script failed', $error->getMessage());
         }
 
         $this->assertSame($level, ob_get_level());
         $this->assertSame('partial', $output);
     }
 
-    public function testPhpParseErrorIsReportedAsScriptException(): void
+    public function testPhpScriptErrorMessageIsIncludedWithDebugOn(): void
+    {
+        $this->app['config']->set('app.debug', true);
+        $data = ['request' => []];
+
+        try {
+            (new Php())->runScript("\$x = 1;\nthrow new \\Error('script failed');", 'test', [], $data);
+            $this->fail('expected a ScriptException');
+        } catch (ScriptException $e) {
+            $this->assertSame('Exception executing script: Error on line 2: script failed', $e->getMessage());
+        }
+    }
+
+    public function testPhpTypeErrorIsDescribedByTypeAndLine(): void
+    {
+        $this->app['config']->set('app.debug', false);
+        $data = ['request' => []];
+
+        try {
+            (new Php())->runScript("\$f = function (int \$x) {\n    return \$x;\n};\nreturn \$f('abc');", 'test', [], $data);
+            $this->fail('expected a ScriptException');
+        } catch (ScriptException $e) {
+            $this->assertSame('Exception executing script: TypeError on line 1', $e->getMessage());
+            $this->assertInstanceOf(\TypeError::class, $e->getPrevious()?->getPrevious());
+        }
+    }
+
+    public function testPhpErrorFromCalledCodeNamesTheCallingLine(): void
+    {
+        $this->app['config']->set('app.debug', false);
+        $data = ['request' => []];
+        $helper = '\\' . ScriptOutputHelper::class;
+
+        try {
+            (new Php())->runScript("\$a = 1;\n\n{$helper}::countOf('not countable');", 'test', [], $data);
+            $this->fail('expected a ScriptException');
+        } catch (ScriptException $e) {
+            $this->assertSame('Exception executing script: TypeError on line 3', $e->getMessage());
+        }
+    }
+
+    public function testPhpErrorIsLoggedWithTheOriginalError(): void
+    {
+        $this->app['config']->set('app.debug', false);
+        Log::spy();
+        $data = ['request' => []];
+
+        try {
+            (new Php())->runScript("\$x = 1;\nthrow new \\Error('script failed');", 'test', [], $data);
+            $this->fail('expected a ScriptException');
+        } catch (ScriptException $e) {
+        }
+
+        Log::shouldHaveReceived('error')->withArgs(function ($message, $context = []) {
+            return 'Exception executing script: Error on line 2' === $message &&
+                ($context['exception'] ?? null) instanceof \Error &&
+                'script failed' === $context['exception']->getMessage();
+        })->once();
+    }
+
+    public function testPhpParseErrorIsReportedWithTheScriptLine(): void
     {
         $level = ob_get_level();
         $data = ['request' => []];
@@ -125,10 +192,25 @@ class ScriptOutputTest extends TestCase
             (new Php())->runScript("echo 'x';\nthis is not valid (", 'test', [], $data);
             $this->fail('expected a ScriptException');
         } catch (ScriptException $e) {
-            $this->assertStringContainsString('syntax error', $e->getMessage());
+            $this->assertStringStartsWith('Exception executing script: Parse error on line 2: syntax error', $e->getMessage());
+            $this->assertInstanceOf(\ParseError::class, $e->getPrevious()?->getPrevious());
         }
 
         $this->assertSame($level, ob_get_level());
+    }
+
+    public function testPhpParseErrorLineCountsTheOpeningTagAndBlankLines(): void
+    {
+        $data = ['request' => []];
+
+        foreach (["<?php\n\n\$a = 1;\n\$b = ;\n", "\n\n\$a = 1;\n\$b = ;"] as $script) {
+            try {
+                (new Php())->runScript($script, 'test', [], $data);
+                $this->fail('expected a ScriptException');
+            } catch (ScriptException $e) {
+                $this->assertStringStartsWith('Exception executing script: Parse error on line 4: ', $e->getMessage());
+            }
+        }
     }
 
     public function testPhpScriptResultIsReturned(): void
@@ -142,7 +224,7 @@ class ScriptOutputTest extends TestCase
         $this->assertSame('note', $output);
     }
 
-    public function testPython3WrapperDoesNotPrintTheEventOrPlatform(): void
+    public function testPython3WrapperHasNoDebugOutput(): void
     {
         $engine = new Python3EnrobeProbe(['command_path' => '/bin/true']);
         $data = ['request' => ['method' => 'GET', 'headers' => ['host' => 'localhost']]];
@@ -180,6 +262,17 @@ class OutputProbeEngine extends BaseEngineAdapter
     public function executeString($path, $identifier, array &$data = [], array $engineArguments = [])
     {
         return ($this->run)();
+    }
+}
+
+/**
+ * Code a script calls into, outside the script itself.
+ */
+class ScriptOutputHelper
+{
+    public static function countOf($value)
+    {
+        return count($value);
     }
 }
 
