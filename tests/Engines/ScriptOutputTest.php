@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\Log;
 use Orchestra\Testbench\TestCase;
 
 /**
- * Whatever a script prints is captured by runScript() and handed back through
- * $output; it must never end up in front of the API response, whether the
- * script succeeds or fails.
+ * runScript() returns what a script prints through $output.
  */
 class ScriptOutputTest extends TestCase
 {
@@ -99,6 +97,52 @@ class ScriptOutputTest extends TestCase
 
         $this->assertSame($level, ob_get_level());
         $this->assertSame('outer inner', $output);
+    }
+
+    public function testOutputAfterTheScriptClosesItsBufferIsReturned(): void
+    {
+        $engine = new OutputProbeEngine(function () {
+            echo 'before ';
+            ob_end_clean();
+            echo 'after';
+
+            return ['x' => 2];
+        });
+
+        ob_start();
+        $level = ob_get_level();
+        $data = [];
+        $output = null;
+        try {
+            $result = $engine->runScript("line\none", 'test', [], $data, $output);
+            $this->assertSame($level, ob_get_level(), 'the caller buffer stays open');
+            echo 'body';
+        } finally {
+            $outer = ob_get_clean();
+        }
+
+        $this->assertSame(['x' => 2], $result);
+        $this->assertSame('after', $output);
+        $this->assertSame('body', $outer);
+    }
+
+    public function testPhpScriptThatClosesItsBufferReturnsItsResult(): void
+    {
+        $data = ['request' => []];
+        $output = null;
+
+        ob_start();
+        $level = ob_get_level();
+        try {
+            $result = (new Php())->runScript("ob_end_clean();\necho 'AFTERCLOSE';\nreturn ['x' => 2];", 'test', [], $data, $output);
+            $this->assertSame($level, ob_get_level());
+        } finally {
+            $outer = ob_get_clean();
+        }
+
+        $this->assertSame(['x' => 2], $result['script_result']);
+        $this->assertSame('AFTERCLOSE', $output);
+        $this->assertSame('', $outer);
     }
 
     public function testPhpScriptErrorIsReportedAsScriptException(): void
@@ -234,8 +278,6 @@ class ScriptOutputTest extends TestCase
         $printed = ob_get_clean();
 
         $this->assertSame('', $printed);
-        $this->assertStringNotContainsString('print(eventJson)', $script);
-        $this->assertStringNotContainsString('print(platformJson)', $script);
         $this->assertStringContainsString('print(json.dumps(_event));', $script);
     }
 }

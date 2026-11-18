@@ -158,7 +158,8 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
 
     /**
      * Closes the output buffer runScript() opened at $level and any buffers the script
-     * opened on top of it and left open.
+     * opened on top of it and left open. If the script closed that buffer itself, its
+     * later output is taken from the buffer below.
      *
      * @param int $level
      *
@@ -179,6 +180,18 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
             }
             if (false === $chunk || ob_get_level() >= $current) {
                 break;
+            }
+        }
+
+        //  The script closed the buffer runScript() opened, so what it printed afterwards went
+        //  to the buffer below. Take it from there, leaving that buffer itself open.
+        if (ob_get_level() > 0 && ob_get_level() < $level) {
+            $status = ob_get_status();
+            if (($status['flags'] ?? 0) & PHP_OUTPUT_HANDLER_CLEANABLE) {
+                $contents = ob_get_contents();
+                if (false !== $contents && ob_clean()) {
+                    $output = $contents . $output;
+                }
             }
         }
 
