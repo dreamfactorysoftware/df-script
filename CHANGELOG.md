@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
+### Changed
+- Tidied script engine output handling
+- PHP script errors are reported like other script failures, with the line of the script
 
 ## [0.8.3] - 2019-05-20
 ### Added
