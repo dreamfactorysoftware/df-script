@@ -212,8 +212,16 @@ abstract class ExecutedEngine extends BaseEngineAdapter
         }
         while (!empty($open)) {
             $read = $open;
-            $write = $except = null;
-            if (false === @stream_select($read, $write, $except, null)) {
+            if (false === static::selectStreams($read)) {
+                // Waiting on both streams is not available here (process pipes on Windows, or
+                // an interrupted wait), so read whatever is still open to the end, one at a time.
+                foreach ($open as $stream) {
+                    stream_set_blocking($stream, true);
+                    $rest = stream_get_contents($stream);
+                    if (false !== $rest) {
+                        $text[(int)$stream] .= $rest;
+                    }
+                }
                 break;
             }
             foreach ($read as $stream) {
@@ -232,6 +240,23 @@ abstract class ExecutedEngine extends BaseEngineAdapter
         }
 
         return [$text[(int)$out], $text[(int)$err]];
+    }
+
+    /**
+     * Waits until at least one of the given streams can be read.
+     *
+     * @param resource[] $read Streams to wait on; on return, the ones that can be read
+     *
+     * @return int|false Number of streams that can be read, or false if waiting is not available
+     */
+    protected static function selectStreams(array &$read)
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            return false;
+        }
+        $write = $except = null;
+
+        return @stream_select($read, $write, $except, null);
     }
 
     /**
