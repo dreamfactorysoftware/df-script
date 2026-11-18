@@ -35,10 +35,10 @@ class Python extends ExecutedEngine
 
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
-        // Embedded as is: the script defines true, false and null, so the JSON is a valid
-        // Python expression wherever these values appear.
-        $jsonEvent = $this->safeJsonEncode($data, false);
-        $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
+        // The script decodes the event and platform data itself, so every JSON value reaches it
+        // as the matching Python value, wherever it appears.
+        $jsonEvent = static::decodedJson($this->safeJsonEncode($data, false));
+        $jsonPlatform = static::decodedJson(json_encode($platform, JSON_UNESCAPED_SLASHES));
 
         $protocol = config('df.scripting.default_protocol', 'http');
         $https = Arr::get($_SERVER, 'HTTPS');
@@ -55,10 +55,19 @@ class Python extends ExecutedEngine
         $scriptLines = explode("\n", $script);
 
         $enrobedScript = <<<python
-import httplib, json;
+import base64, httplib, json;
 from bunch import bunchify, unbunchify;
 
-true, false, null = True, False, None;
+# Strings are handed to the script as UTF-8 encoded str values.
+def _utf8(value):
+    if isinstance(value, dict):
+        return dict((_utf8(k), _utf8(v)) for k, v in value.iteritems());
+    if isinstance(value, list):
+        return [_utf8(v) for v in value];
+    if isinstance(value, unicode):
+        return value.encode('utf-8');
+    return value;
+
 eventJson = $jsonEvent;
 platformJson = $jsonPlatform;
 
@@ -191,5 +200,15 @@ python;
     protected function checkOutputStringForData($output)
     {
         return ((strlen($output) > 10) && (false !== strpos($output, 'request')));
+    }
+
+    /**
+     * @param string $json
+     *
+     * @return string A Python expression that evaluates to the decoded $json
+     */
+    protected static function decodedJson($json)
+    {
+        return "_utf8(json.loads(base64.b64decode('" . base64_encode((string)$json) . "')))";
     }
 }

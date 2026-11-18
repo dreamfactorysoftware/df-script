@@ -17,23 +17,19 @@ class PythonEventDataTest extends TestCase
         $app['config']->set('cache.default', 'array');
     }
 
-    protected function payload(bool $unicode = true): array
+    protected function payload(): array
     {
-        $payload = [
-            'flags'  => [true, null, false],
-            'nested' => [['on' => false, 'off' => null], [1, 2.5, -3]],
-            'text'   => 'x:true, y:null, z:false',
-            'quotes' => "it's \"quoted\" \\ and ''' and \"\"\"",
-            'lines'  => "first\nsecond\tthird",
-            'path'   => 'a/b\\c',
-            'empty'  => [],
-            'object' => ['k' => 'v'],
+        return [
+            'flags'   => [true, null, false],
+            'nested'  => [['on' => false, 'off' => null], [1, 2.5, -3]],
+            'text'    => 'x:true, y:null, z:false',
+            'quotes'  => "it's \"quoted\" \\ and ''' and \"\"\"",
+            'lines'   => "first\nsecond\tthird",
+            'path'    => 'a/b\\c',
+            'empty'   => [],
+            'object'  => ['k' => 'v'],
+            'unicode' => "caf\u{00e9} \u{1F600} \u{2028}",
         ];
-        if ($unicode) {
-            $payload['unicode'] = "caf\u{00e9} \u{1F600} \u{2028}";
-        }
-
-        return $payload;
     }
 
     protected function event(array $payload): array
@@ -52,15 +48,15 @@ class PythonEventDataTest extends TestCase
         $this->assertStringNotContainsString('x:true', $script);
     }
 
-    public function testPythonWrapperDefinesTheJsonLiterals(): void
+    public function testPythonWrapperEmbedsTheDataForDecoding(): void
     {
         $engine = new PythonEventDataProbe(['command_path' => '/bin/true']);
 
         $script = $engine->enrobe('return event.request.payload', $this->event($this->payload()));
 
-        $this->assertStringContainsString("true, false, null = True, False, None;\neventJson = {", $script);
-        $this->assertStringContainsString('"flags":[true,null,false]', $script);
-        $this->assertStringContainsString('"text":"x:true, y:null, z:false"', $script);
+        $this->assertStringContainsString("eventJson = _utf8(json.loads(base64.b64decode('", $script);
+        $this->assertStringContainsString("platformJson = _utf8(json.loads(base64.b64decode('", $script);
+        $this->assertStringNotContainsString('x:true', $script);
     }
 
     public function testPython3ScriptReceivesEveryValueUnchanged(): void
@@ -71,20 +67,39 @@ class PythonEventDataTest extends TestCase
         $event = $this->runWrapped(new Python3EventDataProbe(['command_path' => $python]), $python, $payload);
 
         $this->assertSame(['bool', 'NoneType', 'bool'], $event['script_result']['types']);
+        $this->assertSame('str', $event['script_result']['text']);
         $this->assertSame(true, $event['script_result']['platform']);
-        $this->assertSame(json_encode($payload), json_encode($event['script_result']['payload']));
+        $this->assertSame($this->sorted($payload), $this->sorted($event['script_result']['payload']));
     }
 
     public function testPythonScriptReceivesEveryValueUnchanged(): void
     {
         $python = $this->interpreter(['python2', 'python'], 2, 'bunch');
-        $payload = $this->payload(false);
+        $payload = $this->payload();
 
         $event = $this->runWrapped(new PythonEventDataProbe(['command_path' => $python]), $python, $payload);
 
         $this->assertSame(['bool', 'NoneType', 'bool'], $event['script_result']['types']);
+        $this->assertSame('str', $event['script_result']['text']);
         $this->assertSame(true, $event['script_result']['platform']);
-        $this->assertSame(json_encode($payload), json_encode($event['script_result']['payload']));
+        $this->assertSame($this->sorted($payload), $this->sorted($event['script_result']['payload']));
+    }
+
+    /**
+     * Sorts object keys at every level; Python 2 dictionaries do not keep insertion order.
+     */
+    protected function sorted(array $value): array
+    {
+        if (!array_is_list($value)) {
+            ksort($value);
+        }
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->sorted($item);
+            }
+        }
+
+        return $value;
     }
 
     /**
@@ -112,7 +127,8 @@ class PythonEventDataTest extends TestCase
         $file = tempnam(sys_get_temp_dir(), 'py');
         file_put_contents($file, $engine->enrobe(
             "p = event.request.payload\n" .
-            "return {'payload': p, 'types': [type(v).__name__ for v in p.flags], 'platform': platform.session.flag}",
+            "return {'payload': p, 'types': [type(v).__name__ for v in p.flags], 'text': type(p.text).__name__, " .
+            "'platform': platform.session.flag}",
             $this->event($payload)
         ));
         exec(escapeshellarg($python) . ' ' . escapeshellarg($file) . ' 2>&1', $output, $status);

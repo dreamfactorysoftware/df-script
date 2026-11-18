@@ -6,6 +6,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 - Tidied script engine output handling
 - PHP script errors are reported like other script failures, with the line of the script
+- Python and Python 3 scripts receive event and platform data as decoded JSON, so `true`, `false` and `null` work anywhere in a payload and non-ASCII text arrives unchanged
 
 ## [0.8.3] - 2019-05-20
 ### Added
