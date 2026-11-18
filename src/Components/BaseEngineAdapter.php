@@ -168,6 +168,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
     protected static function closeOutputBuffers($level)
     {
         $output = '';
+        $closedOwn = false;
         while (($current = ob_get_level()) >= $level) {
             $status = ob_get_status();
             if (!(($status['flags'] ?? 0) & PHP_OUTPUT_HANDLER_REMOVABLE)) {
@@ -177,6 +178,9 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
             $chunk = ob_get_clean();
             if (false !== $chunk) {
                 $output = $chunk . $output;
+                if ($current === $level) {
+                    $closedOwn = true;
+                }
             }
             if (false === $chunk || ob_get_level() >= $current) {
                 break;
@@ -185,7 +189,7 @@ abstract class BaseEngineAdapter implements ScriptingEngineInterface
 
         //  The script closed the buffer runScript() opened, so what it printed afterwards went
         //  to the buffer below. Take it from there, leaving that buffer itself open.
-        if (ob_get_level() > 0 && ob_get_level() < $level) {
+        if (!$closedOwn && ob_get_level() > 0 && ob_get_level() < $level) {
             $status = ob_get_status();
             if (($status['flags'] ?? 0) & PHP_OUTPUT_HANDLER_CLEANABLE) {
                 $contents = ob_get_contents();

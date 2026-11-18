@@ -99,6 +99,31 @@ class ScriptOutputTest extends TestCase
         $this->assertSame('outer inner', $output);
     }
 
+    public function testCallerBufferContentIsKept(): void
+    {
+        $engine = new OutputProbeEngine(function () {
+            echo 'script';
+
+            return [];
+        });
+
+        ob_start();
+        echo 'caller ';
+        $level = ob_get_level();
+        $data = [];
+        $output = null;
+        try {
+            $engine->runScript("line\none", 'test', [], $data, $output);
+            $this->assertSame($level, ob_get_level());
+            echo 'body';
+        } finally {
+            $outer = ob_get_clean();
+        }
+
+        $this->assertSame('script', $output);
+        $this->assertSame('caller body', $outer);
+    }
+
     public function testOutputAfterTheScriptClosesItsBufferIsReturned(): void
     {
         $engine = new OutputProbeEngine(function () {
