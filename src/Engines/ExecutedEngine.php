@@ -24,6 +24,11 @@ abstract class ExecutedEngine extends BaseEngineAdapter
      */
     const SCRIPT_TOKEN_TTL = 300;
 
+    /**
+     * Most bytes of a failed script's error output written to the log
+     */
+    const STDERR_LOG_LIMIT = 8192;
+
     protected $scriptFile = null;
 
     /**
@@ -170,23 +175,63 @@ abstract class ExecutedEngine extends BaseEngineAdapter
         }
 
         fclose($pipes[0]);
-        $stdout = stream_get_contents($pipes[1]);
-        $stderr = stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
+        [$stdout, $stderr] = static::readStreams($pipes[1], $pipes[2]);
         $return = proc_close($process);
 
-        $stdout = rtrim((string)$stdout, "\n");
+        $stdout = rtrim($stdout, "\n");
         $output = $stdout === '' ? [] : explode("\n", $stdout);
 
-        if ($return !== 0 && $stderr !== '' && $stderr !== false) {
-            Log::error(
-                "Script execution failed (exit={$return}). stderr:\n" .
-                rtrim($stderr, "\n")
-            );
+        $stderr = rtrim($stderr, "\n");
+        if ($return !== 0 && $stderr !== '') {
+            if (strlen($stderr) > static::STDERR_LOG_LIMIT) {
+                // The end of the output holds the error itself.
+                $stderr = '[' . (strlen($stderr) - static::STDERR_LOG_LIMIT) . ' bytes not shown]' .
+                    substr($stderr, -static::STDERR_LOG_LIMIT);
+            }
+            Log::error("Script execution failed (exit={$return}). stderr:\n" . $stderr);
         }
 
         return $output === [] ? '' : end($output);
+    }
+
+    /**
+     * Reads the output and error streams of a running process together, so a process that
+     * writes a lot to one of them never waits on the other. Closes both streams.
+     *
+     * @param resource $out
+     * @param resource $err
+     *
+     * @return string[] The output and error text
+     */
+    protected static function readStreams($out, $err)
+    {
+        $text = [(int)$out => '', (int)$err => ''];
+        $open = [$out, $err];
+        foreach ($open as $stream) {
+            stream_set_blocking($stream, false);
+        }
+        while (!empty($open)) {
+            $read = $open;
+            $write = $except = null;
+            if (false === @stream_select($read, $write, $except, null)) {
+                break;
+            }
+            foreach ($read as $stream) {
+                $chunk = fread($stream, 65536);
+                if (false !== $chunk && '' !== $chunk) {
+                    $text[(int)$stream] .= $chunk;
+                } elseif (feof($stream) || false === $chunk) {
+                    $open = array_filter($open, fn ($s) => $s !== $stream);
+                }
+            }
+        }
+        foreach ([$out, $err] as $stream) {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }
+
+        return [$text[(int)$out], $text[(int)$err]];
     }
 
     /**
