@@ -132,7 +132,9 @@ abstract class ExecutedEngine extends BaseEngineAdapter
         }
 
         if ($return > 0) {
-            Log::debug("Executed script: $runnerShell");
+            // execute() already logs the interpreter's stderr; name the script here rather than
+            // repeating the full command line.
+            Log::debug("Executed script '$identifier' ({$this->commandName}) exited with code $return");
             throw new InternalServerErrorException('Executed command returned with error code: ' . $return);
         }
 
