@@ -4,6 +4,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.4] - 2026-11-18
+### Changed
+- Tidied script engine output handling
+- PHP script errors are reported like other script failures, with the line of the script
+- Python and Python 3 scripts receive event and platform data as decoded JSON, so `true`, `false` and `null` work anywhere in a payload and non-ASCII text arrives unchanged
+- Python, Python 3 and Node.js scripts that write a lot of error output finish normally, and the log keeps the last 8 KB of that output
+- Node.js and Python scripts clean up their per-run cache entries when they exit
+
 ## [0.8.3] - 2019-05-20
 ### Added
 - DF-8273 Python scripting None / Null fix

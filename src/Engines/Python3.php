@@ -36,64 +36,29 @@ class Python3 extends ExecutedEngine
     protected function enrobeScript($script, array &$data = [], array $platform = [])
     {
 
-        $jsonEvent = $this->safeJsonEncode($data, false);
+        // The script decodes the event and platform data itself, so every JSON value reaches it
+        // as the matching Python value, wherever it appears.
+        $jsonEvent = static::decodedJson($this->safeJsonEncode($data, false));
+        $jsonPlatform = static::decodedJson(json_encode($platform, JSON_UNESCAPED_SLASHES));
 
-        $jsonPlatform = json_encode($platform, JSON_UNESCAPED_SLASHES);
-
-        $jsonPlatform = str_replace(
-            [
-                ":null,", ":null",
-                ":false,", ":false",
-                ":true,", ":true"
-            ],
-            [
-                ":None,", ":None",
-                ":False,", ":False",
-                ":True,", ":True"
-            ],
-            $jsonPlatform
-        );
-
-        $jsonEvent = str_replace(
-            [
-                ":null,", ":null",
-                ":false,", ":false",
-                ":true,", ":true"
-            ],
-            [
-            ":None,", ":None",
-            ":False,", ":False",
-            ":True,", ":True"
-            ],
-            $jsonEvent
-        );
-        
         $protocol = config('df.scripting.default_protocol', 'http');
         $https = Arr::get($_SERVER, 'HTTPS');
         if ((!empty($https) && ('off' != $https)) || (443 == Arr::get($_SERVER, 'SERVER_PORT'))) {
             $protocol = 'https';
         }
-        $token = bin2hex(random_bytes(32));
-        $tokenCache = [
-            'app_id'  => Arr::get($platform, 'session.app.id'),
-            'user_id' => Arr::get($platform, 'session.user.id')
-        ];
-        Cache::add('script-token:'.$token, $tokenCache, 300); // script should not take longer than 300 seconds to run
+        $token = $this->registerScriptToken(bin2hex(random_bytes(32)), $platform);
 
         if (empty($script)) {
             $script = 'pass;';
         }
         $scriptLines = explode("\n", $script);
 
-        echo $jsonEvent;
         $enrobedScript = <<<python
-import http.client, json;
+import base64, http.client, json;
 from munch import munchify, unmunchify;
 
 eventJson = $jsonEvent;
-print(eventJson);
 platformJson = $jsonPlatform;
-print(platformJson);
 
 _event = munchify(eventJson);
 _platform = munchify(platformJson);
@@ -216,6 +181,16 @@ python;
         $enrobedScript = trim($enrobedScript);
 
         return $enrobedScript;
+    }
+
+    /**
+     * @param string $json
+     *
+     * @return string A Python expression that evaluates to the decoded $json
+     */
+    protected static function decodedJson($json)
+    {
+        return "json.loads(base64.b64decode('" . base64_encode((string)$json) . "').decode('utf-8'))";
     }
 
     /** @inheritdoc */
